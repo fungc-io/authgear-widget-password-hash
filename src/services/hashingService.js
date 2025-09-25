@@ -45,8 +45,7 @@ export function saltToUint8Array(salt, encoding = 'hex') {
 }
 
 /**
- * Mock Argon2id implementation for demonstration purposes
- * Note: This is a simplified mock - in production, use a proper Argon2 library
+ * Hash password using Argon2id with argon2-browser (vanilla JS)
  * @param {string} password - Plaintext password
  * @param {Object} options - Argon2id parameters
  * @returns {Promise<Object>} Hash result with salt, hash, and execution time
@@ -65,15 +64,23 @@ export async function hashArgon2id(password, options = {}) {
   const startTime = performance.now();
   
   try {
+    // Check if argon2 is available globally
+    if (typeof window === 'undefined' || !window.argon2) {
+      throw new Error('argon2-browser library not loaded. Please ensure the script is included in your HTML.');
+    }
+    
     // Use provided salt or generate one if not provided
     const salt = options.salt || generateSalt(saltLength, saltEncoding);
-    const saltBytes = saltToUint8Array(salt, saltEncoding);
     
-    // Mock Argon2id computation using PBKDF2 as a substitute
-    // In a real implementation, this would use the actual Argon2id algorithm
-    const mockHash = CryptoJS.PBKDF2(password, CryptoJS.lib.WordArray.create(saltBytes), {
-      keySize: keyLength / 4,
-      iterations: iterations * 1000 // Scale up iterations for demonstration
+    // Use argon2-browser for real Argon2id computation
+    const result = await window.argon2.hash({
+      pass: password,
+      salt: salt, // Use string salt, not bytes
+      time: iterations,
+      mem: memory * 1024, // Convert to KB
+      hashLen: keyLength,
+      parallelism: parallelism,
+      type: window.argon2.ArgonType.Argon2id
     });
     
     const endTime = performance.now();
@@ -82,16 +89,25 @@ export async function hashArgon2id(password, options = {}) {
     // Convert hash to desired encoding
     let hashString;
     if (hashEncoding === 'hex') {
-      hashString = mockHash.toString(CryptoJS.enc.Hex);
+      hashString = result.hashHex;
     } else if (hashEncoding === 'base64') {
-      hashString = mockHash.toString(CryptoJS.enc.Base64);
+      // Convert hex to base64
+      const hex = result.hashHex;
+      const bytes = new Uint8Array(hex.length / 2);
+      for (let i = 0; i < hex.length; i += 2) {
+        bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+      }
+      hashString = btoa(String.fromCharCode(...bytes));
     }
+    
+    // Use the encoded hash from argon2-browser
+    const encodedHash = result.encoded;
     
     return {
       algorithm: 'argon2id',
       salt,
       hash: hashString,
-      encodedHash: `$argon2id$v=19$m=${memory * 1024},t=${iterations},p=${parallelism}$${btoa(String.fromCharCode(...saltBytes))}$${btoa(String.fromCharCode(...mockHash.words.map(w => w >>> 24, w => (w >>> 16) & 0xff, w => (w >>> 8) & 0xff, w => w & 0xff).flat()))}`,
+      encodedHash,
       executionTime,
       parameters: { memory, iterations, parallelism, saltLength, keyLength }
     };
@@ -242,10 +258,22 @@ export async function hashPBKDF2(password, options = {}) {
     const salt = options.salt || generateSalt(saltLength, saltEncoding);
     const saltBytes = saltToUint8Array(salt, saltEncoding);
     
-    // Hash with PBKDF2-HMAC-SHA256
-    const hash = CryptoJS.PBKDF2(password, CryptoJS.lib.WordArray.create(saltBytes), {
-      keySize: keyLength / 4, // CryptoJS uses words (4 bytes each)
-      iterations: iterations
+    // Make PBKDF2 computation asynchronous using requestIdleCallback or setTimeout
+    const hash = await new Promise((resolve) => {
+      // Use requestIdleCallback if available, otherwise setTimeout
+      const runComputation = () => {
+        const result = CryptoJS.PBKDF2(password, CryptoJS.lib.WordArray.create(saltBytes), {
+          keySize: keyLength / 4, // CryptoJS uses words (4 bytes each)
+          iterations: iterations
+        });
+        resolve(result);
+      };
+      
+      if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(runComputation);
+      } else {
+        setTimeout(runComputation, 0);
+      }
     });
     
     const endTime = performance.now();
@@ -284,22 +312,18 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
   try {
     switch (algorithm) {
       case 'argon2id':
-        // Mock verification for Argon2id
-        const argon2Match = hash.match(/^\$argon2id\$v=19\$m=(\d+),t=(\d+),p=(\d+)\$([^$]+)\$([^$]+)$/);
-        if (!argon2Match) {
-          throw new Error('Invalid Argon2id hash format');
+        // Check if argon2 is available globally
+        if (typeof window === 'undefined' || !window.argon2) {
+          throw new Error('argon2-browser library not loaded. Please ensure the script is included in your HTML.');
         }
-        const [, memory, iterations, parallelism, saltB64, hashB64] = argon2Match;
-        const argon2SaltBytes = new Uint8Array(atob(saltB64).split('').map(c => c.charCodeAt(0)));
-        const expectedArgon2Hash = atob(hashB64);
         
-        // Use the same mock computation as in hashArgon2id
-        const computedArgon2Hash = CryptoJS.PBKDF2(password, CryptoJS.lib.WordArray.create(argon2SaltBytes), {
-          keySize: expectedArgon2Hash.length / 4,
-          iterations: parseInt(iterations) * 1000
+        // Use argon2-browser for verification
+        const verifyResult = await window.argon2.verify({
+          pass: password,
+          encoded: hash
         });
         
-        return computedArgon2Hash.toString(CryptoJS.enc.Base64) === hashB64;
+        return verifyResult;
       
       case 'scrypt':
         // For scrypt, we need to parse the encoded hash to extract parameters

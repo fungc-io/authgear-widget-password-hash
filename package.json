@@ -13,6 +13,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "argon2-browser": "^1.18.0",
     "bcryptjs": "^2.4.3",
     "crypto-js": "^4.2.0",
     "react": "^18.2.0",

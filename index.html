@@ -28,11 +28,19 @@
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    <!-- argon2-browser library -->
+    <script src="./argon2-bundled.js"></script>
     <script>
       // Debug script to check if page loads
       console.log('JWT Debugger Widget loading...');
       window.addEventListener('load', () => {
         console.log('JWT Debugger Widget loaded successfully');
+        // Check if argon2 is available
+        if (window.argon2) {
+          console.log('argon2-browser library loaded successfully');
+        } else {
+          console.error('argon2-browser library failed to load');
+        }
       });
     </script>
     <script type="module" src="./src/main.tsx"></script>
