@@ -53,107 +53,140 @@ const HashVerification: React.FC = () => {
 
   return (
     <div className="hash-verification">
-      <div className="form-section">
-        <div className="form-group">
-          <label className="form-label">Encoded Hash</label>
-          <textarea
-            className="form-input"
-            value={encodedHash}
-            onChange={(e) => setEncodedHash(e.target.value)}
-            placeholder="Paste encoded hash here (e.g., $argon2id$v=19$m=19456,t=2,p=1$...)"
-            rows={4}
-          />
-          <small className="help-text">
-            Supports Argon2id, scrypt, bcrypt, and PBKDF2 encoded hashes
-          </small>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Candidate Password</label>
-          <textarea
-            className="form-input"
-            value={candidatePassword}
-            onChange={(e) => setCandidatePassword(e.target.value)}
-            placeholder="Enter password to verify..."
-            rows={3}
-          />
-        </div>
-
-        <button
-          className="btn verify-btn"
-          onClick={handleVerify}
-          disabled={isVerifying || !encodedHash.trim() || !candidatePassword.trim()}
-        >
-          {isVerifying ? 'Verifying...' : 'Verify Password'}
-        </button>
-
-        {error && (
-          <div className="error-message">
-            {error}
+      <div className="hash-verification-layout">
+        {/* Left column - Input Form */}
+        <div className="input-section">
+          <div className="form-group">
+            <label className="form-label">Encoded Hash</label>
+            <textarea
+              className="form-input"
+              value={encodedHash}
+              onChange={(e) => setEncodedHash(e.target.value)}
+              placeholder="Paste encoded hash here (e.g., $argon2id$v=19$m=19456,t=2,p=1$...)"
+              rows={4}
+            />
+            <small className="help-text">
+              Supports Argon2id, scrypt, bcrypt, and PBKDF2 encoded hashes
+            </small>
           </div>
-        )}
-      </div>
 
-      {/* Verification Results */}
-      {verificationResult && (
-        <div className="verification-results">
-          <h3>Verification Result</h3>
-          
-          <div className={`verification-status ${verificationResult.isValid ? 'valid' : 'invalid'}`}>
-            <div className="status-indicator">
-              {verificationResult.isValid ? (
-                <>
-                  <span className="status-icon">✅</span>
-                  <span className="status-text">MATCH</span>
-                </>
-              ) : (
-                <>
-                  <span className="status-icon">❌</span>
-                  <span className="status-text">NO MATCH</span>
-                </>
-              )}
+          <div className="form-group">
+            <label className="form-label">Candidate Password</label>
+            <textarea
+              className="form-input"
+              value={candidatePassword}
+              onChange={(e) => setCandidatePassword(e.target.value)}
+              placeholder="Enter password to verify..."
+              rows={3}
+            />
+          </div>
+
+          <button
+            className="btn verify-btn"
+            onClick={handleVerify}
+            disabled={isVerifying || !encodedHash.trim() || !candidatePassword.trim()}
+          >
+            {isVerifying ? 'Verifying...' : 'Verify Password'}
+          </button>
+
+          {error && (
+            <div className="error-message">
+              {error}
             </div>
-            <div className="status-message">
-              {verificationResult.message}
-            </div>
-          </div>
+          )}
+        </div>
 
-          <div className="verification-details">
-            <div className="detail-item">
-              <label>Algorithm Detected:</label>
-              <span className="algorithm-name">{verificationResult.algorithm.toUpperCase()}</span>
+        {/* Middle column - Results */}
+        <div className="results-section">
+          {isVerifying ? (
+            <div className="results-loading">
+              <h3>Verifying Password...</h3>
+              <div className="loading-spinner"></div>
+              <p>Please wait while we verify your password.</p>
+            </div>
+          ) : verificationResult ? (
+            <>
+              <h3>Verification Result</h3>
+              
+              <div className={`verification-status ${verificationResult.isValid ? 'valid' : 'invalid'}`}>
+                <div className="status-indicator">
+                  {verificationResult.isValid ? (
+                    <>
+                      <span className="status-icon">✅</span>
+                      <span className="status-text">MATCH</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="status-icon">❌</span>
+                      <span className="status-text">NO MATCH</span>
+                    </>
+                  )}
+                </div>
+                <div className="status-message">
+                  {verificationResult.message}
+                </div>
+              </div>
+
+              <div className="verification-details">
+                <div className="detail-item">
+                  <label>Algorithm Detected:</label>
+                  <span className="algorithm-name">{verificationResult.algorithm.toUpperCase()}</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="results-placeholder">
+              <h3>Verification Results</h3>
+              <p>Enter an encoded hash and candidate password to see the verification results here.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Right column - Supported Formats */}
+        <div className="formats-section">
+          <h4>Supported Hash Formats</h4>
+          <div className="format-examples">
+            <div className="format-card">
+              <div className="format-header">
+                <span className="format-icon">🔐</span>
+                <span className="format-name">Argon2id</span>
+              </div>
+              <div className="format-code">
+                <code>$argon2id$v=19$m=19456,t=2,p=1$...</code>
+              </div>
+            </div>
+            
+            <div className="format-card">
+              <div className="format-header">
+                <span className="format-icon">🛡️</span>
+                <span className="format-name">scrypt</span>
+              </div>
+              <div className="format-code">
+                <code>$scrypt$N=131072,r=8,p=1$...</code>
+              </div>
+            </div>
+            
+            <div className="format-card">
+              <div className="format-header">
+                <span className="format-icon">🔑</span>
+                <span className="format-name">bcrypt</span>
+              </div>
+              <div className="format-code">
+                <code>$2b$12$...</code>
+              </div>
+            </div>
+            
+            <div className="format-card">
+              <div className="format-header">
+                <span className="format-icon">⚡</span>
+                <span className="format-name">PBKDF2</span>
+              </div>
+              <div className="format-code">
+                <code>$pbkdf2-sha256$600000$...</code>
+              </div>
             </div>
           </div>
         </div>
-      )}
-
-      <div className="help-section">
-        <h4>Supported Hash Formats</h4>
-        <div className="format-examples">
-          <div className="format-example">
-            <strong>Argon2id:</strong>
-            <code>$argon2id$v=19$m=19456,t=2,p=1$...</code>
-          </div>
-          <div className="format-example">
-            <strong>scrypt:</strong>
-            <code>$scrypt$N=131072,r=8,p=1$...</code>
-          </div>
-          <div className="format-example">
-            <strong>bcrypt:</strong>
-            <code>$2b$12$...</code>
-          </div>
-          <div className="format-example">
-            <strong>PBKDF2:</strong>
-            <code>$pbkdf2-sha256$600000$...</code>
-          </div>
-        </div>
-      </div>
-
-      <div className="disclaimer">
-        <small>
-          ⚠️ <strong>For learning purposes only.</strong> This tool is designed for educational use and testing. 
-          For production applications, use established libraries and follow security best practices.
-        </small>
       </div>
     </div>
   );
