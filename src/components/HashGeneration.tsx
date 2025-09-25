@@ -232,6 +232,21 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
               <div className="parameters-grid">
                 {Object.keys(algorithmConfig.parameters).map(paramKey => {
                   const param = algorithmConfig.parameters[paramKey];
+                  const getParameterDescription = (key) => {
+                    const descriptions = {
+                      memory: 'Memory usage in MiB. Higher = more secure but slower.',
+                      iterations: 'Number of iterations. Higher = more secure but slower.',
+                      parallelism: 'Number of parallel threads. Usually 4 for optimal performance.',
+                      saltLength: 'Salt length in bytes. 16 bytes (128-bit) is recommended.',
+                      keyLength: 'Hash output length in bytes. 32 bytes (256-bit) is recommended.',
+                      N: 'CPU/Memory cost factor. Must be power of 2.',
+                      r: 'Block size parameter. Higher = more memory usage.',
+                      p: 'Parallelization parameter. Usually 1.',
+                      cost: 'Cost factor (2^cost rounds). Higher = more secure but slower.'
+                    };
+                    return descriptions[key] || '';
+                  };
+                  
                   return (
                     <div key={paramKey} className="parameter-input">
                       <label className="parameter-label">{param.label}</label>
@@ -243,7 +258,11 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
                         min={param.min}
                         max={param.max}
                         step={param.step}
+                        title={getParameterDescription(paramKey)}
                       />
+                      <small className="parameter-description">
+                        {getParameterDescription(paramKey)}
+                      </small>
                     </div>
                   );
                 })}

@@ -934,6 +934,15 @@ body {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
 }
 
+.parameter-description {
+  display: block;
+  color: #6c757d;
+  font-size: 11px;
+  margin-top: 2px;
+  line-height: 1.3;
+  font-style: italic;
+}
+
 .warnings {
   margin-top: 12px;
 }

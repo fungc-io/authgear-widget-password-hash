@@ -72,12 +72,26 @@ export async function hashArgon2id(password, options = {}) {
     // Use provided salt or generate one if not provided
     const salt = options.salt || generateSalt(saltLength, saltEncoding);
     
+    // Convert salt to bytes for argon2-browser (it expects UTF-8 string, not hex)
+    let saltForArgon2;
+    if (saltEncoding === 'hex') {
+      // Convert hex string to actual bytes, then to string
+      const saltBytes = saltToUint8Array(salt, 'hex');
+      saltForArgon2 = String.fromCharCode(...saltBytes);
+    } else if (saltEncoding === 'base64') {
+      // Convert base64 to bytes, then to string
+      const saltBytes = saltToUint8Array(salt, 'base64');
+      saltForArgon2 = String.fromCharCode(...saltBytes);
+    } else {
+      saltForArgon2 = salt; // Use as-is if already a string
+    }
+    
     // Use argon2-browser for real Argon2id computation
     const result = await window.argon2.hash({
       pass: password,
-      salt: salt, // Use string salt, not bytes
+      salt: saltForArgon2, // Use actual bytes as string
       time: iterations,
-      mem: memory * 1024, // Convert to KB
+      mem: memory * 1024, // Convert MiB to KiB (argon2-browser expects KiB)
       hashLen: keyLength,
       parallelism: parallelism,
       type: window.argon2.ArgonType.Argon2id
@@ -364,7 +378,7 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
           iterations: parseInt(pbkdf2Iterations)
         });
         
-        return computedPbkdf2Hash.toString(CryptoJS.enc.Base64) === hashB64;
+        return computedPbkdf2Hash.toString(CryptoJS.enc.Base64) === pbkdf2HashB64;
       
       default:
         throw new Error(`Unsupported algorithm: ${algorithm}`);
