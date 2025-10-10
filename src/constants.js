@@ -17,7 +17,7 @@ export const HASHING_ALGORITHMS = {
     label: 'bcrypt',
     description: 'Adaptive password hashing function',
     parameters: {
-      cost: { label: 'Cost Factor', default: 12, min: 4, max: 20, step: 1 }
+      cost: { label: 'Cost Factor', default: 10, min: 4, max: 20, step: 1 }
     }
   },
   SCRYPT: {

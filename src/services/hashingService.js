@@ -187,7 +187,9 @@ export async function hashScrypt(password, options = {}) {
  * @returns {Promise<Object>} Hash result with salt, hash, and execution time
  */
 export async function hashBcrypt(password, options = {}) {
-  const { cost = 12, salt, saltEncoding = 'hex' } = options;
+  console.log('🔵 [bcrypt] Starting with password:', password, 'options:', options);
+  
+  const { cost = 10, salt } = options;
 
   const startTime = performance.now();
   
@@ -195,33 +197,18 @@ export async function hashBcrypt(password, options = {}) {
     let bcryptSalt;
     
     if (salt) {
-      // Use provided salt - convert to bcrypt format
-      const saltBytes = saltToUint8Array(salt, saltEncoding);
-      
-      // Ensure salt is exactly 16 bytes for bcrypt
-      let finalSaltBytes;
-      if (saltBytes.length === 16) {
-        finalSaltBytes = saltBytes;
-      } else if (saltBytes.length < 16) {
-        // Pad with zeros if too short
-        finalSaltBytes = new Uint8Array(16);
-        finalSaltBytes.set(saltBytes);
-      } else {
-        // Truncate if too long
-        finalSaltBytes = saltBytes.slice(0, 16);
-      }
-      
-      // Convert bytes to base64 for bcrypt salt format
-      const saltBase64 = btoa(String.fromCharCode(...finalSaltBytes));
-      // Create bcrypt salt with cost factor
-      bcryptSalt = `$2a$${cost}$${saltBase64}`;
+      console.log('🔵 [bcrypt] Using provided salt:', salt);
+      bcryptSalt = salt;
     } else {
-      // Generate salt if not provided
-      bcryptSalt = bcrypt.genSaltSync(cost);
+      console.log('🔵 [bcrypt] Generating new salt with cost:', cost);
+      // Generate salt using async function
+      bcryptSalt = await bcrypt.genSalt(cost);
+      console.log('🔵 [bcrypt] Generated bcrypt salt:', bcryptSalt);
     }
     
-    // Hash with bcrypt
-    const hash = bcrypt.hashSync(password, bcryptSalt);
+    // Hash with bcrypt using async function
+    console.log('🔵 [bcrypt] Hashing password with bcrypt...');
+    const hash = await bcrypt.hash(password, bcryptSalt);
     
     const endTime = performance.now();
     const executionTime = Math.round(endTime - startTime);
@@ -229,7 +216,7 @@ export async function hashBcrypt(password, options = {}) {
     // Extract salt from bcrypt hash (first 29 characters)
     const extractedSalt = hash.substring(0, 29);
     
-    return {
+    const result = {
       algorithm: 'bcrypt',
       salt: extractedSalt,
       hash: hash,
@@ -237,7 +224,12 @@ export async function hashBcrypt(password, options = {}) {
       executionTime,
       parameters: { cost }
     };
+    
+    console.log('✅ [bcrypt] Completed in', executionTime, 'ms. Hash:', hash);
+    
+    return result;
   } catch (error) {
+    console.error('❌ [bcrypt] Error:', error.message);
     throw new Error(`bcrypt hashing failed: ${error.message}`);
   }
 }
@@ -369,7 +361,10 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
         return computedHash.every((byte, i) => byte === expectedHash[i]);
       
       case 'bcrypt':
-        return bcrypt.compareSync(password, hash);
+        console.log('🔵 [bcrypt Verify] Verifying password against hash');
+        const bcryptResult = await bcrypt.compare(password, hash);
+        console.log('✅ [bcrypt Verify] Verification result:', bcryptResult);
+        return bcryptResult;
       
       case 'pbkdf2':
         // For PBKDF2, we need to parse the encoded hash

@@ -45,10 +45,29 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
 
   // Generate initial salt on component mount
   React.useEffect(() => {
-    const saltLength = parameters.saltLength || (algorithmConfig?.parameters.saltLength?.default || 16);
-    const initialSalt = generateSalt(saltLength, saltEncoding);
-    setSaltInput(initialSalt);
-  }, []); // Only run on mount
+    const generateInitialSalt = async () => {
+      if (selectedAlgorithm === 'bcrypt') {
+        // For bcrypt, use bcrypt.genSalt with cost factor
+        const cost = parameters.cost || (algorithmConfig?.parameters.cost?.default || 10);
+        try {
+          const bcrypt = await import('bcryptjs');
+          const initialSalt = await bcrypt.genSalt(cost);
+          setSaltInput(initialSalt);
+        } catch (error) {
+          console.error('Error generating initial bcrypt salt:', error);
+          // Fallback to default salt
+          setSaltInput('$2a$10$N9qo8uLOickgx2ZMRZoMye');
+        }
+      } else {
+        // For other algorithms, use the existing generateSalt function
+        const saltLength = parameters.saltLength || (algorithmConfig?.parameters.saltLength?.default || 16);
+        const initialSalt = generateSalt(saltLength, saltEncoding);
+        setSaltInput(initialSalt);
+      }
+    };
+    
+    generateInitialSalt();
+  }, [selectedAlgorithm]); // Run when algorithm changes
 
   // Check for parameter warnings
   const warnings = useMemo(() => {
@@ -108,18 +127,38 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
     }
   }, [validateField, hasAttemptedSubmit]);
 
-  const handleGenerateSalt = useCallback(() => {
-    const saltLength = parameters.saltLength || (algorithmConfig?.parameters.saltLength?.default || 16);
-    const newSalt = generateSalt(saltLength, saltEncoding);
-    setSaltInput(newSalt);
-    setResult(null); // Clear results when salt is regenerated
-    if (hasAttemptedSubmit) {
-      setValidationErrors(prev => ({
-        ...prev,
-        salt: validateField('salt', newSalt)
-      }));
+  const handleGenerateSalt = useCallback(async () => {
+    if (selectedAlgorithm === 'bcrypt') {
+      // For bcrypt, use bcrypt.genSalt with cost factor
+      const cost = parameters.cost || (algorithmConfig?.parameters.cost?.default || 10);
+      try {
+        const bcrypt = await import('bcryptjs');
+        const newSalt = await bcrypt.genSalt(cost);
+        setSaltInput(newSalt);
+        setResult(null); // Clear results when salt is regenerated
+        if (hasAttemptedSubmit) {
+          setValidationErrors(prev => ({
+            ...prev,
+            salt: validateField('salt', newSalt)
+          }));
+        }
+      } catch (error) {
+        console.error('Error generating bcrypt salt:', error);
+      }
+    } else {
+      // For other algorithms, use the existing generateSalt function
+      const saltLength = parameters.saltLength || (algorithmConfig?.parameters.saltLength?.default || 16);
+      const newSalt = generateSalt(saltLength, saltEncoding);
+      setSaltInput(newSalt);
+      setResult(null); // Clear results when salt is regenerated
+      if (hasAttemptedSubmit) {
+        setValidationErrors(prev => ({
+          ...prev,
+          salt: validateField('salt', newSalt)
+        }));
+      }
     }
-  }, [saltEncoding, validateField, hasAttemptedSubmit, parameters.saltLength, algorithmConfig]);
+  }, [selectedAlgorithm, saltEncoding, validateField, hasAttemptedSubmit, parameters.saltLength, parameters.cost, algorithmConfig]);
 
   const handleAlgorithmChange = useCallback((e) => {
     setSelectedAlgorithm(e.target.value);
@@ -297,24 +336,26 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
             <label className="form-label">Salt Configuration</label>
             <div className="salt-config-card">
               {/* Salt Length and Generation Controls */}
-              {algorithmConfig && algorithmConfig.parameters.saltLength && (
+              {algorithmConfig && (algorithmConfig.parameters.saltLength || selectedAlgorithm === 'bcrypt') && (
                 <div className="salt-controls">
                   <div className="salt-control-row">
-                    <div className="salt-control-group">
-                      <label className="salt-control-label">Length (bytes)</label>
-                      <input
-                        type="number"
-                        className="salt-length-input"
-                        value={parameters.saltLength || algorithmConfig.parameters.saltLength.default}
-                        onChange={(e) => handleParameterChange('saltLength', parseInt(e.target.value))}
-                        min={algorithmConfig.parameters.saltLength.min}
-                        max={algorithmConfig.parameters.saltLength.max}
-                        step={algorithmConfig.parameters.saltLength.step}
-                        title="Salt length in bytes. 16 bytes (128-bit) is recommended."
-                      />
-                    </div>
+                    {selectedAlgorithm !== 'bcrypt' && (
+                      <div className="salt-control-group">
+                        <label className="salt-control-label">Length (bytes)</label>
+                        <input
+                          type="number"
+                          className="salt-length-input"
+                          value={parameters.saltLength || algorithmConfig.parameters.saltLength.default}
+                          onChange={(e) => handleParameterChange('saltLength', parseInt(e.target.value))}
+                          min={algorithmConfig.parameters.saltLength.min}
+                          max={algorithmConfig.parameters.saltLength.max}
+                          step={algorithmConfig.parameters.saltLength.step}
+                          title="Salt length in bytes. 16 bytes (128-bit) is recommended."
+                        />
+                      </div>
+                    )}
                     
-                    {selectedAlgorithm !== 'argon2id' && (
+                    {selectedAlgorithm !== 'argon2id' && selectedAlgorithm !== 'bcrypt' && (
                       <div className="salt-control-group">
                         <label className="salt-control-label">Format</label>
                         <div className="salt-format-radio-group">
@@ -335,16 +376,16 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
                       </div>
                     )}
                     
-                    <button
-                      className="salt-generate-btn"
-                      onClick={handleGenerateSalt}
-                      type="button"
-                    >
-                      Generate New Salt
-                    </button>
+                      <button
+                        className="salt-generate-btn"
+                        onClick={handleGenerateSalt}
+                        type="button"
+                      >
+                        Generate New Salt
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
               
               {/* Salt Value Input */}
               <div className="salt-value-section">
@@ -372,25 +413,27 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
             </div>
           </div>
 
-          {/* Output Encoding */}
-          <div className="form-group">
-            <label className="form-label">Output Encoding</label>
-            <div className="encoding-radio-group">
-              {HASH_ENCODING_OPTIONS.map(option => (
-                <label key={option.value} className="encoding-radio-option">
-                  <input
-                    type="radio"
-                    name="hashEncoding"
-                    value={option.value}
-                    checked={hashEncoding === option.value}
-                    onChange={handleHashEncodingChange}
-                    className="encoding-radio-input"
-                  />
-                  <span className="encoding-radio-label">{option.label}</span>
-                </label>
-              ))}
+          {/* Output Encoding - Hide for bcrypt */}
+          {selectedAlgorithm !== 'bcrypt' && (
+            <div className="form-group">
+              <label className="form-label">Output Encoding</label>
+              <div className="encoding-radio-group">
+                {HASH_ENCODING_OPTIONS.map(option => (
+                  <label key={option.value} className="encoding-radio-option">
+                    <input
+                      type="radio"
+                      name="hashEncoding"
+                      value={option.value}
+                      checked={hashEncoding === option.value}
+                      onChange={handleHashEncodingChange}
+                      className="encoding-radio-input"
+                    />
+                    <span className="encoding-radio-label">{option.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <button
             className="btn generate-btn"
@@ -442,21 +485,23 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
                 </div>
               </div>
 
-              <div className="result-item">
-                <div className="result-header">
-                  <label>Raw Hash ({hashEncoding.toUpperCase()})</label>
-                  <button
-                    className="copy-btn"
-                    onClick={() => copyHash(result.hash)}
-                    disabled={copiedHash}
-                  >
-                    {copiedHash ? 'Copied!' : 'Copy'}
-                  </button>
+              {selectedAlgorithm !== 'bcrypt' && (
+                <div className="result-item">
+                  <div className="result-header">
+                    <label>Raw Hash ({hashEncoding.toUpperCase()})</label>
+                    <button
+                      className="copy-btn"
+                      onClick={() => copyHash(result.hash)}
+                      disabled={copiedHash}
+                    >
+                      {copiedHash ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+                  <div className="result-content">
+                    <code>{result.hash}</code>
+                  </div>
                 </div>
-                <div className="result-content">
-                  <code>{result.hash}</code>
-                </div>
-              </div>
+              )}
 
               <div className="result-item">
                 <div className="result-header">
@@ -478,9 +523,11 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
                 <label>Execution Time</label>
                 <div className="result-content">
                   <code>{result.executionTime}ms</code>
-                  <div className="execution-time-hint">
-                    💡 Try adjusting the parameters to make the time around 500ms
-                  </div>
+                  {selectedAlgorithm === 'argon2id' && (
+                    <div className="execution-time-hint">
+                      💡 Try adjusting the parameters to make the time around 500ms
+                    </div>
+                  )}
                 </div>
               </div>
             </>
