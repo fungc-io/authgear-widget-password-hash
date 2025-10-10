@@ -88,7 +88,7 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
     };
     
     generateInitialSalt();
-  }, [selectedAlgorithm, parameters, saltEncoding]); // Run when algorithm changes
+  }, [selectedAlgorithm, saltEncoding]); // Removed parameters to prevent infinite loop
 
   // Check for parameter warnings
   const warnings = useMemo(() => {

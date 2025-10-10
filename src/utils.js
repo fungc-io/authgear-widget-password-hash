@@ -100,18 +100,24 @@ export const isTimestampClaim = (key) => {
 };
 
 // Custom hook for clipboard copy logic
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 export function useClipboard(timeout = 2000) {
   const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef(null);
 
   const copy = useCallback(async (text) => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
     try {
       // Try modern clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(text);
         setCopied(true);
-        setTimeout(() => setCopied(false), timeout);
+        timeoutRef.current = setTimeout(() => setCopied(false), timeout);
         return true;
       }
     } catch (error) {
@@ -134,7 +140,7 @@ export function useClipboard(timeout = 2000) {
       
       if (successful) {
         setCopied(true);
-        setTimeout(() => setCopied(false), timeout);
+        timeoutRef.current = setTimeout(() => setCopied(false), timeout);
         return true;
       }
     } catch (error) {
@@ -144,6 +150,15 @@ export function useClipboard(timeout = 2000) {
     setCopied(false);
     return false;
   }, [timeout]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   return [copied, copy];
 } 
