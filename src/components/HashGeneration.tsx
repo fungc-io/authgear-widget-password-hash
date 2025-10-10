@@ -24,6 +24,30 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
 
+  // Calculate salt byte length based on encoding
+  const calculateSaltByteLength = (salt: string, encoding: string): number => {
+    if (!salt) return 0;
+    
+    try {
+      if (encoding === 'hex') {
+        // Hex: 2 characters per byte
+        return Math.ceil(salt.length / 2);
+      } else if (encoding === 'base64') {
+        // Base64: decode to get actual byte length
+        const binaryString = atob(salt);
+        return binaryString.length;
+      }
+    } catch (error) {
+      // If decoding fails, fall back to approximation
+      if (encoding === 'base64') {
+        // Base64: approximately 4 characters per 3 bytes
+        return Math.floor(salt.length * 3 / 4);
+      }
+    }
+    
+    return 0;
+  };
+
   const [copiedSalt, copySalt] = useClipboard();
   const [copiedHash, copyHash] = useClipboard();
   const [copiedEncodedHash, copyEncodedHash] = useClipboard();
@@ -330,7 +354,7 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
                   />
                   <div className="salt-value-info">
                     <span className="salt-length-display">
-                      {saltInput ? `${Math.ceil(saltInput.length / 2)} bytes` : '0 bytes'}
+                      {saltInput ? `${calculateSaltByteLength(saltInput, saltEncoding)} bytes` : '0 bytes'}
                     </span>
                   </div>
                 </div>
@@ -487,7 +511,7 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
                   onClick={() => setShowAdditionalInfo(!showAdditionalInfo)}
                   type="button"
                 >
-                  <span className="arrow">{showAdditionalInfo ? '▼' : '▶'}</span>
+                  <span className="arrow">▶</span>
                   Additional Info
                 </button>
               </div>
