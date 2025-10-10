@@ -314,24 +314,26 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
                       />
                     </div>
                     
-                    <div className="salt-control-group">
-                      <label className="salt-control-label">Format</label>
-                      <div className="salt-format-radio-group">
-                        {SALT_ENCODING_OPTIONS.map(option => (
-                          <label key={option.value} className="salt-format-radio-option">
-                            <input
-                              type="radio"
-                              name="saltEncoding"
-                              value={option.value}
-                              checked={saltEncoding === option.value}
-                              onChange={handleSaltEncodingChange}
-                              className="salt-format-radio-input"
-                            />
-                            <span className="salt-format-radio-label">{option.label}</span>
-                          </label>
-                        ))}
+                    {selectedAlgorithm !== 'argon2id' && (
+                      <div className="salt-control-group">
+                        <label className="salt-control-label">Format</label>
+                        <div className="salt-format-radio-group">
+                          {SALT_ENCODING_OPTIONS.map(option => (
+                            <label key={option.value} className="salt-format-radio-option">
+                              <input
+                                type="radio"
+                                name="saltEncoding"
+                                value={option.value}
+                                checked={saltEncoding === option.value}
+                                onChange={handleSaltEncodingChange}
+                                className="salt-format-radio-input"
+                              />
+                              <span className="salt-format-radio-label">{option.label}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                     
                     <button
                       className="salt-generate-btn"
@@ -476,6 +478,9 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
                 <label>Execution Time</label>
                 <div className="result-content">
                   <code>{result.executionTime}ms</code>
+                  <div className="execution-time-hint">
+                    💡 Try adjusting the parameters to make the time around 500ms
+                  </div>
                 </div>
               </div>
             </>

@@ -9,7 +9,7 @@ export const HASHING_ALGORITHMS = {
       iterations: { label: 'Iterations', default: 2, min: 1, max: 10, step: 1 },
       parallelism: { label: 'Parallelism', default: 1, min: 1, max: 16, step: 1 },
       saltLength: { label: 'Salt Length (bytes)', default: 16, min: 8, max: 64, step: 1 },
-      keyLength: { label: 'Key Length (bytes)', default: 32, min: 16, max: 64, step: 1 }
+      keyLength: { label: 'Hash Length (bytes)', default: 32, min: 16, max: 64, step: 1 }
     }
   },
   SCRYPT: {

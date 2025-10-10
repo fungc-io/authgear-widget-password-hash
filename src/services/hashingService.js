@@ -51,6 +51,8 @@ export function saltToUint8Array(salt, encoding = 'hex') {
  * @returns {Promise<Object>} Hash result with salt, hash, and execution time
  */
 export async function hashArgon2id(password, options = {}) {
+  console.log('🔵 [Argon2id] Starting with password:', password, 'options:', options);
+  
   const {
     memory = 19,
     iterations = 2,
@@ -66,30 +68,18 @@ export async function hashArgon2id(password, options = {}) {
   try {
     // Check if argon2 is available globally
     if (typeof window === 'undefined' || !window.argon2) {
+      console.error('❌ [Argon2id] argon2-browser library not loaded');
       throw new Error('argon2-browser library not loaded. Please ensure the script is included in your HTML.');
     }
     
     // Use provided salt or generate one if not provided
     const salt = options.salt || generateSalt(saltLength, saltEncoding);
-    
-    // Convert salt to bytes for argon2-browser (it expects UTF-8 string, not hex)
-    let saltForArgon2;
-    if (saltEncoding === 'hex') {
-      // Convert hex string to actual bytes, then to string
-      const saltBytes = saltToUint8Array(salt, 'hex');
-      saltForArgon2 = String.fromCharCode(...saltBytes);
-    } else if (saltEncoding === 'base64') {
-      // Convert base64 to bytes, then to string
-      const saltBytes = saltToUint8Array(salt, 'base64');
-      saltForArgon2 = String.fromCharCode(...saltBytes);
-    } else {
-      saltForArgon2 = salt; // Use as-is if already a string
-    }
+    console.log('🔵 [Argon2id] Using salt:', salt);
     
     // Use argon2-browser for real Argon2id computation
     const result = await window.argon2.hash({
       pass: password,
-      salt: saltForArgon2, // Use actual bytes as string
+      salt: salt,
       time: iterations,
       mem: memory * 1024, // Convert MiB to KiB (argon2-browser expects KiB)
       hashLen: keyLength,
@@ -114,18 +104,20 @@ export async function hashArgon2id(password, options = {}) {
       hashString = btoa(String.fromCharCode(...bytes));
     }
     
-    // Use the encoded hash from argon2-browser
-    const encodedHash = result.encoded;
-    
-    return {
+    const finalResult = {
       algorithm: 'argon2id',
       salt,
       hash: hashString,
-      encodedHash,
+      encodedHash: result.encoded,
       executionTime,
       parameters: { memory, iterations, parallelism, saltLength, keyLength }
     };
+    
+    console.log('✅ [Argon2id] Completed in', executionTime, 'ms. Hash:', hashString);
+    
+    return finalResult;
   } catch (error) {
+    console.error('❌ [Argon2id] Error:', error.message);
     throw new Error(`Argon2id hashing failed: ${error.message}`);
   }
 }
