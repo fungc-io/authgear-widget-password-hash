@@ -25,7 +25,7 @@ export const HASHING_ALGORITHMS = {
     label: 'scrypt',
     description: 'Memory-hard key derivation function',
     parameters: {
-      N: { label: 'N (CPU/Memory cost)', default: 131072, min: 1024, max: 1048576, step: 1024 }, // 2^17
+      N: { label: 'N (CPU/Memory cost)', default: 16384, min: 1024, max: 1048576, step: 1024 }, // 2^14
       r: { label: 'r (Block size)', default: 8, min: 1, max: 32, step: 1 },
       p: { label: 'p (Parallelization)', default: 1, min: 1, max: 16, step: 1 },
       saltLength: { label: 'Salt Length (bytes)', default: 16, min: 8, max: 64, step: 1 },
@@ -55,7 +55,6 @@ export const PARAMETER_WARNINGS = {
     parallelism: { threshold: 1, message: 'Parallelism below 1 is invalid' }
   },
   scrypt: {
-    N: { threshold: 65536, message: 'N below 65536 may be insecure' },
     r: { threshold: 8, message: 'r below 8 may be insecure' }
   },
   bcrypt: {

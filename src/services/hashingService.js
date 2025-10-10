@@ -2,6 +2,22 @@ import scrypt from 'scrypt-js';
 import bcrypt from 'bcryptjs';
 import CryptoJS from 'crypto-js';
 
+// Check if we're in development environment
+const isDev = import.meta.env.DEV;
+
+// Debug logging helper
+const debugLog = (...args) => {
+  if (isDev) {
+    console.log(...args);
+  }
+};
+
+const debugError = (...args) => {
+  if (isDev) {
+    console.error(...args);
+  }
+};
+
 /**
  * Generate a random salt
  * @param {number} length - Salt length in bytes
@@ -82,7 +98,7 @@ export function saltToUint8Array(salt, encoding = 'hex') {
  * @returns {Promise<Object>} Hash result with salt, hash, and execution time
  */
 export async function hashArgon2id(password, options = {}) {
-  console.log('🔵 [Argon2id] Starting with password:', password, 'options:', options);
+  debugLog('🔵 [Argon2id] Starting with password:', password, 'options:', options);
   
   const {
     memory = 19,
@@ -99,13 +115,13 @@ export async function hashArgon2id(password, options = {}) {
   try {
     // Check if argon2 is available globally
     if (typeof window === 'undefined' || !window.argon2) {
-      console.error('❌ [Argon2id] argon2-browser library not loaded');
+      debugError('❌ [Argon2id] argon2-browser library not loaded');
       throw new Error('argon2-browser library not loaded. Please ensure the script is included in your HTML.');
     }
     
     // Use provided salt or generate one if not provided
     const salt = options.salt || generateSalt(saltLength, saltEncoding);
-    console.log('🔵 [Argon2id] Using salt:', salt);
+    debugLog('🔵 [Argon2id] Using salt:', salt);
     
     // Use argon2-browser for real Argon2id computation
     // Add a small delay to allow React to render the loading state
@@ -147,11 +163,11 @@ export async function hashArgon2id(password, options = {}) {
       parameters: { memory, iterations, parallelism, saltLength, keyLength }
     };
     
-    console.log('✅ [Argon2id] Completed in', executionTime, 'ms. Hash:', hashString);
+    debugLog('✅ [Argon2id] Completed in', executionTime, 'ms. Hash:', hashString);
     
     return finalResult;
   } catch (error) {
-    console.error('❌ [Argon2id] Error:', error.message);
+    debugError('❌ [Argon2id] Error:', error.message);
     throw new Error(`Argon2id hashing failed: ${error.message}`);
   }
 }
@@ -163,8 +179,10 @@ export async function hashArgon2id(password, options = {}) {
  * @returns {Promise<Object>} Hash result with salt, hash, and execution time
  */
 export async function hashScrypt(password, options = {}) {
+  debugLog('🔵 [scrypt] Starting with password:', password, 'options:', options);
+  
   const {
-    N = 131072,
+    N = 16384,
     r = 8,
     p = 1,
     saltLength = 16,
@@ -180,9 +198,22 @@ export async function hashScrypt(password, options = {}) {
     const salt = options.salt || generateSalt(saltLength, saltEncoding);
     const saltBytes = saltToUint8Array(salt, saltEncoding);
     
-    // Hash with scrypt
+    // Normalize password according to scrypt-js documentation
+    const normalizedPassword = password.normalize('NFKC');
+    debugLog('🔵 [scrypt] Normalized password:', normalizedPassword);
+    
+    // Add a small delay to allow React to render the loading state
+    await new Promise(resolve => setTimeout(resolve, 10));
+    
+    // Hash with scrypt using normalized password
+    debugLog('🔵 [scrypt] Computing scrypt with parameters:', {
+      N: N,
+      r: r,
+      p: p,
+      keyLength: keyLength
+    });
     const hash = await scrypt.scrypt(
-      new TextEncoder().encode(password),
+      new TextEncoder().encode(normalizedPassword),
       saltBytes,
       N,
       r,
@@ -201,7 +232,7 @@ export async function hashScrypt(password, options = {}) {
       hashString = btoa(String.fromCharCode(...hash));
     }
     
-    return {
+    const result = {
       algorithm: 'scrypt',
       salt,
       hash: hashString,
@@ -209,7 +240,12 @@ export async function hashScrypt(password, options = {}) {
       executionTime,
       parameters: { N, r, p, saltLength, keyLength }
     };
+    
+    debugLog('✅ [scrypt] Completed in', executionTime, 'ms. Hash:', hashString);
+    
+    return result;
   } catch (error) {
+    debugError('❌ [scrypt] Error:', error.message);
     throw new Error(`scrypt hashing failed: ${error.message}`);
   }
 }
@@ -221,7 +257,7 @@ export async function hashScrypt(password, options = {}) {
  * @returns {Promise<Object>} Hash result with salt, hash, and execution time
  */
 export async function hashBcrypt(password, options = {}) {
-  console.log('🔵 [bcrypt] Starting with password:', password, 'options:', options);
+  debugLog('🔵 [bcrypt] Starting with password:', password, 'options:', options);
   
   const { cost = 10, salt } = options;
 
@@ -231,17 +267,17 @@ export async function hashBcrypt(password, options = {}) {
     let bcryptSalt;
     
     if (salt) {
-      console.log('🔵 [bcrypt] Using provided salt:', salt);
+      debugLog('🔵 [bcrypt] Using provided salt:', salt);
       bcryptSalt = salt;
     } else {
-      console.log('🔵 [bcrypt] Generating new salt with cost:', cost);
+      debugLog('🔵 [bcrypt] Generating new salt with cost:', cost);
       // Generate salt using async function
       bcryptSalt = await bcrypt.genSalt(cost);
-      console.log('🔵 [bcrypt] Generated bcrypt salt:', bcryptSalt);
+      debugLog('🔵 [bcrypt] Generated bcrypt salt:', bcryptSalt);
     }
     
     // Hash with bcrypt using async function
-    console.log('🔵 [bcrypt] Hashing password with bcrypt...');
+    debugLog('🔵 [bcrypt] Hashing password with bcrypt...');
     const hash = await bcrypt.hash(password, bcryptSalt);
     
     const endTime = performance.now();
@@ -259,11 +295,11 @@ export async function hashBcrypt(password, options = {}) {
       parameters: { cost }
     };
     
-    console.log('✅ [bcrypt] Completed in', executionTime, 'ms. Hash:', hash);
+    debugLog('✅ [bcrypt] Completed in', executionTime, 'ms. Hash:', hash);
     
     return result;
   } catch (error) {
-    console.error('❌ [bcrypt] Error:', error.message);
+    debugError('❌ [bcrypt] Error:', error.message);
     throw new Error(`bcrypt hashing failed: ${error.message}`);
   }
 }
@@ -275,7 +311,7 @@ export async function hashBcrypt(password, options = {}) {
  * @returns {Promise<Object>} Hash result with salt, hash, and execution time
  */
 export async function hashPBKDF2(password, options = {}) {
-  console.log('🔵 [PBKDF2] Starting with password:', password, 'options:', options);
+  debugLog('🔵 [PBKDF2] Starting with password:', password, 'options:', options);
   
   const {
     iterations = 600000,
@@ -293,7 +329,7 @@ export async function hashPBKDF2(password, options = {}) {
     let saltWordArray;
     
     if (options.salt) {
-      console.log('🔵 [PBKDF2] Using provided salt:', options.salt);
+      debugLog('🔵 [PBKDF2] Using provided salt:', options.salt);
       // Convert provided salt to WordArray
       if (saltEncoding === 'hex') {
         saltWordArray = CryptoJS.enc.Hex.parse(options.salt);
@@ -304,19 +340,19 @@ export async function hashPBKDF2(password, options = {}) {
       }
       salt = options.salt;
     } else {
-      console.log('🔵 [PBKDF2] Generating salt with CryptoJS.lib.WordArray.random');
+      debugLog('🔵 [PBKDF2] Generating salt with CryptoJS.lib.WordArray.random');
       // Generate salt using CryptoJS.lib.WordArray.random (saltLength in bytes)
       saltWordArray = CryptoJS.lib.WordArray.random(saltLength);
       salt = saltWordArray.toString(CryptoJS.enc.Hex);
-      console.log('🔵 [PBKDF2] Generated salt:', salt);
+      debugLog('🔵 [PBKDF2] Generated salt:', salt);
     }
     
     // Add a small delay to allow React to render the loading state
     await new Promise(resolve => setTimeout(resolve, 10));
     
     // Use CryptoJS PBKDF2 according to documentation
-    console.log('🔵 [PBKDF2] Computing PBKDF2 with CryptoJS...');
-    console.log('🔵 [PBKDF2] Input parameters:', {
+    debugLog('🔵 [PBKDF2] Computing PBKDF2 with CryptoJS...');
+    debugLog('🔵 [PBKDF2] Input parameters:', {
       password: password,
       saltWordArray: saltWordArray.toString(CryptoJS.enc.Hex),
       keySize: keyLength / 4,
@@ -347,11 +383,11 @@ export async function hashPBKDF2(password, options = {}) {
       parameters: { iterations, saltLength, keyLength }
     };
     
-    console.log('✅ [PBKDF2] Completed in', executionTime, 'ms. Hash:', hashString);
+    debugLog('✅ [PBKDF2] Completed in', executionTime, 'ms. Hash:', hashString);
     
     return result;
   } catch (error) {
-    console.error('❌ [PBKDF2] Error:', error.message);
+    debugError('❌ [PBKDF2] Error:', error.message);
     throw new Error(`PBKDF2 hashing failed: ${error.message}`);
   }
 }
@@ -368,11 +404,11 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
   try {
     switch (algorithm) {
       case 'argon2id':
-        console.log('🔵 [Argon2id Verify] Verifying password against hash');
+        debugLog('🔵 [Argon2id Verify] Verifying password against hash');
         
         // Check if argon2 is available globally
         if (typeof window === 'undefined' || !window.argon2) {
-          console.error('❌ [Argon2id Verify] argon2-browser library not loaded');
+          debugError('❌ [Argon2id Verify] argon2-browser library not loaded');
           throw new Error('argon2-browser library not loaded. Please ensure the script is included in your HTML.');
         }
         
@@ -385,33 +421,48 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
             encoded: hash
           });
           
-          console.log('✅ [Argon2id Verify] Verification successful');
+          debugLog('✅ [Argon2id Verify] Verification successful');
           return true;
           
         } catch (verifyError) {
-          console.log('🔵 [Argon2id Verify] Verification failed:', verifyError.message);
+          debugLog('🔵 [Argon2id Verify] Verification failed:', verifyError.message);
           
           // Check if it's a verification failure (wrong password) vs other error
           if (verifyError.message && verifyError.message.includes('verification')) {
             return false;
           } else {
-            console.error('❌ [Argon2id Verify] Unexpected error:', verifyError);
+            debugError('❌ [Argon2id Verify] Unexpected error:', verifyError);
             throw verifyError;
           }
         }
       
       case 'scrypt':
+        debugLog('🔵 [scrypt Verify] Verifying password against hash');
         // For scrypt, we need to parse the encoded hash to extract parameters
         const scryptMatch = hash.match(/^\$scrypt\$N=(\d+),r=(\d+),p=(\d+)\$([^$]+)\$([^$]+)$/);
         if (!scryptMatch) {
+          debugError('❌ [scrypt Verify] Invalid hash format');
           throw new Error('Invalid scrypt hash format');
         }
         const [, N, r, p, scryptSaltB64, scryptHashB64] = scryptMatch;
         const saltBytes = new Uint8Array(atob(scryptSaltB64).split('').map(c => c.charCodeAt(0)));
         const expectedHash = new Uint8Array(atob(scryptHashB64).split('').map(c => c.charCodeAt(0)));
         
+        // Normalize password according to scrypt-js documentation
+        const normalizedPassword = password.normalize('NFKC');
+        debugLog('🔵 [scrypt Verify] Normalized password:', normalizedPassword);
+        
+        // Add a small delay to allow React to render the loading state
+        await new Promise(resolve => setTimeout(resolve, 10));
+        
+        debugLog('🔵 [scrypt Verify] Computing scrypt with parameters:', {
+          N: parseInt(N),
+          r: parseInt(r),
+          p: parseInt(p),
+          keyLength: expectedHash.length
+        });
         const computedHash = await scrypt.scrypt(
-          new TextEncoder().encode(password),
+          new TextEncoder().encode(normalizedPassword),
           saltBytes,
           parseInt(N),
           parseInt(r),
@@ -419,20 +470,22 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
           expectedHash.length
         );
         
-        return computedHash.every((byte, i) => byte === expectedHash[i]);
+        const result = computedHash.every((byte, i) => byte === expectedHash[i]);
+        debugLog('✅ [scrypt Verify] Verification result:', result);
+        return result;
       
       case 'bcrypt':
-        console.log('🔵 [bcrypt Verify] Verifying password against hash');
+        debugLog('🔵 [bcrypt Verify] Verifying password against hash');
         const bcryptResult = await bcrypt.compare(password, hash);
-        console.log('✅ [bcrypt Verify] Verification result:', bcryptResult);
+        debugLog('✅ [bcrypt Verify] Verification result:', bcryptResult);
         return bcryptResult;
       
       case 'pbkdf2':
-        console.log('🔵 [PBKDF2 Verify] Verifying password against hash');
+        debugLog('🔵 [PBKDF2 Verify] Verifying password against hash');
         // For PBKDF2, we need to parse the encoded hash
         const pbkdf2Match = hash.match(/^\$pbkdf2-sha256\$(\d+)\$([^$]+)\$([^$]+)$/);
         if (!pbkdf2Match) {
-          console.error('❌ [PBKDF2 Verify] Invalid hash format');
+          debugError('❌ [PBKDF2 Verify] Invalid hash format');
           throw new Error('Invalid PBKDF2 hash format');
         }
         const [, pbkdf2Iterations, pbkdf2SaltB64, pbkdf2HashB64] = pbkdf2Match;
@@ -442,15 +495,15 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
         // Add a small delay to allow React to render the loading state
         await new Promise(resolve => setTimeout(resolve, 10));
         
-        console.log('🔵 [PBKDF2 Verify] Computing PBKDF2 with CryptoJS...');
+        debugLog('🔵 [PBKDF2 Verify] Computing PBKDF2 with CryptoJS...');
         const computedPbkdf2Hash = CryptoJS.PBKDF2(password, CryptoJS.lib.WordArray.create(pbkdf2SaltBytes), {
           keySize: expectedPbkdf2Hash.length / 4,
           iterations: parseInt(pbkdf2Iterations)
         });
         
-        const result = computedPbkdf2Hash.toString(CryptoJS.enc.Base64) === pbkdf2HashB64;
-        console.log('✅ [PBKDF2 Verify] Verification result:', result);
-        return result;
+        const pbkdf2Result = computedPbkdf2Hash.toString(CryptoJS.enc.Base64) === pbkdf2HashB64;
+        debugLog('✅ [PBKDF2 Verify] Verification result:', pbkdf2Result);
+        return pbkdf2Result;
       
       default:
         throw new Error(`Unsupported algorithm: ${algorithm}`);
