@@ -237,18 +237,20 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
         <div className="form-section">
           <div className="form-group">
             <label className="form-label">Plaintext Password</label>
-            <input
-              type="text"
-              className={`form-input ${validationErrors.password ? 'error' : ''}`}
-              value={password}
-              onChange={handlePasswordChange}
-              placeholder="Enter password to hash..."
-            />
-            {validationErrors.password && (
-              <div className="validation-error" style={{color: 'red', fontSize: '14px', marginTop: '4px'}}>
-                ⚠️ {validationErrors.password}
-              </div>
-            )}
+            <div className="password-config-card">
+              <input
+                type="text"
+                className={`password-input ${validationErrors.password ? 'error' : ''}`}
+                value={password}
+                onChange={handlePasswordChange}
+                placeholder="Enter password to hash..."
+              />
+              {validationErrors.password && (
+                <div className="password-validation-error">
+                  ⚠️ {validationErrors.password}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Algorithm Configuration */}

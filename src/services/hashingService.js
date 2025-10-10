@@ -77,6 +77,9 @@ export async function hashArgon2id(password, options = {}) {
     console.log('🔵 [Argon2id] Using salt:', salt);
     
     // Use argon2-browser for real Argon2id computation
+    // Add a small delay to allow React to render the loading state
+    await new Promise(resolve => setTimeout(resolve, 10));
+    
     const result = await window.argon2.hash({
       pass: password,
       salt: salt,
