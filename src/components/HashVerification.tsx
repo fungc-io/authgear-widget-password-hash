@@ -119,29 +119,32 @@ const HashVerification: React.FC = () => {
             <>
               <h3>Verification Result</h3>
               
-              <div className={`verification-status ${verificationResult.isValid ? 'valid' : 'invalid'}`}>
-                <div className="status-indicator">
-                  {verificationResult.isValid ? (
-                    <>
-                      <span className="status-icon">✅</span>
-                      <span className="status-text">MATCH</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="status-icon">❌</span>
-                      <span className="status-text">NO MATCH</span>
-                    </>
-                  )}
-                </div>
-                <div className="status-message">
-                  {verificationResult.message}
+              {/* Primary - Verification Status */}
+              <div className={`result-item result-item-primary ${verificationResult.isValid ? 'verification-success' : 'verification-failure'}`}>
+                <div className="verification-status-content">
+                  <div className="verification-icon">
+                    {verificationResult.isValid ? (
+                      <span className="success-icon">✓</span>
+                    ) : (
+                      <span className="failure-icon">✗</span>
+                    )}
+                  </div>
+                  <div className="verification-details">
+                    <div className="verification-title">
+                      {verificationResult.isValid ? 'Password Verified' : 'Verification Failed'}
+                    </div>
+                    <div className="verification-message">
+                      {verificationResult.message}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="verification-details">
-                <div className="detail-item">
-                  <label>Algorithm Detected:</label>
-                  <span className="algorithm-name">{verificationResult.algorithm.toUpperCase()}</span>
+              {/* Secondary - Algorithm */}
+              <div className="result-item result-item-secondary">
+                <label className="result-label-secondary">Algorithm Detected</label>
+                <div className="result-content result-content-secondary">
+                  <code className="result-code-secondary">{verificationResult.algorithm.toUpperCase()}</code>
                 </div>
               </div>
             </>

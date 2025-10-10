@@ -376,6 +376,9 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
           throw new Error('argon2-browser library not loaded. Please ensure the script is included in your HTML.');
         }
         
+        // Add a small delay to allow React to render the loading state
+        await new Promise(resolve => setTimeout(resolve, 10));
+        
         try {
           await window.argon2.verify({
             pass: password,
@@ -435,6 +438,9 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
         const [, pbkdf2Iterations, pbkdf2SaltB64, pbkdf2HashB64] = pbkdf2Match;
         const pbkdf2SaltBytes = new Uint8Array(atob(pbkdf2SaltB64).split('').map(c => c.charCodeAt(0)));
         const expectedPbkdf2Hash = atob(pbkdf2HashB64);
+        
+        // Add a small delay to allow React to render the loading state
+        await new Promise(resolve => setTimeout(resolve, 10));
         
         console.log('🔵 [PBKDF2 Verify] Computing PBKDF2 with CryptoJS...');
         const computedPbkdf2Hash = CryptoJS.PBKDF2(password, CryptoJS.lib.WordArray.create(pbkdf2SaltBytes), {
