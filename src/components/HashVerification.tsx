@@ -45,7 +45,18 @@ const HashVerification: React.FC = () => {
         message: isValid ? 'Password matches hash' : 'Password does not match hash'
       });
     } catch (err) {
-      setError(err.message);
+      // Only show as error if it's not a verification failure
+      if (err.message.includes('verification') || err.message.includes('does not match')) {
+        // Treat verification failure as a normal result
+        setVerificationResult({
+          isValid: false,
+          algorithm: parseAlgorithm(encodedHash) || 'unknown',
+          message: 'Password does not match hash'
+        });
+      } else {
+        // Show other errors (like algorithm detection issues)
+        setError(err.message);
+      }
     } finally {
       setIsVerifying(false);
     }

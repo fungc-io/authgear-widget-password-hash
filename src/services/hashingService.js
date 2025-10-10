@@ -318,18 +318,34 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
   try {
     switch (algorithm) {
       case 'argon2id':
+        console.log('🔵 [Argon2id Verify] Verifying password against hash');
+        
         // Check if argon2 is available globally
         if (typeof window === 'undefined' || !window.argon2) {
+          console.error('❌ [Argon2id Verify] argon2-browser library not loaded');
           throw new Error('argon2-browser library not loaded. Please ensure the script is included in your HTML.');
         }
         
-        // Use argon2-browser for verification
-        const verifyResult = await window.argon2.verify({
-          pass: password,
-          encoded: hash
-        });
-        
-        return verifyResult;
+        try {
+          await window.argon2.verify({
+            pass: password,
+            encoded: hash
+          });
+          
+          console.log('✅ [Argon2id Verify] Verification successful');
+          return true;
+          
+        } catch (verifyError) {
+          console.log('🔵 [Argon2id Verify] Verification failed:', verifyError.message);
+          
+          // Check if it's a verification failure (wrong password) vs other error
+          if (verifyError.message && verifyError.message.includes('verification')) {
+            return false;
+          } else {
+            console.error('❌ [Argon2id Verify] Unexpected error:', verifyError);
+            throw verifyError;
+          }
+        }
       
       case 'scrypt':
         // For scrypt, we need to parse the encoded hash to extract parameters
