@@ -12,6 +12,14 @@ export const HASHING_ALGORITHMS = {
       keyLength: { label: 'Hash Length (bytes)', default: 32, min: 16, max: 64, step: 1 }
     }
   },
+  BCRYPT: {
+    value: 'bcrypt',
+    label: 'bcrypt',
+    description: 'Adaptive password hashing function',
+    parameters: {
+      cost: { label: 'Cost Factor', default: 12, min: 4, max: 20, step: 1 }
+    }
+  },
   SCRYPT: {
     value: 'scrypt',
     label: 'scrypt',
@@ -22,14 +30,6 @@ export const HASHING_ALGORITHMS = {
       p: { label: 'p (Parallelization)', default: 1, min: 1, max: 16, step: 1 },
       saltLength: { label: 'Salt Length (bytes)', default: 16, min: 8, max: 64, step: 1 },
       keyLength: { label: 'Key Length (bytes)', default: 32, min: 16, max: 64, step: 1 }
-    }
-  },
-  BCRYPT: {
-    value: 'bcrypt',
-    label: 'bcrypt',
-    description: 'Adaptive password hashing function',
-    parameters: {
-      cost: { label: 'Cost Factor', default: 12, min: 4, max: 20, step: 1 }
     }
   },
   PBKDF2: {
