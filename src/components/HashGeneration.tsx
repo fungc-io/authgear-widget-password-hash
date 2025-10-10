@@ -22,6 +22,7 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
     salt: ''
   });
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
 
   const [copiedSalt, copySalt] = useClipboard();
   const [copiedHash, copyHash] = useClipboard();
@@ -441,67 +442,36 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
             <>
               <h3>Password Hash Results</h3>
               
-              <div className="result-item">
-                <label>Algorithm</label>
-                <div className="result-content">
-                  <code>{algorithmConfig?.label || selectedAlgorithm}</code>
-                </div>
-              </div>
-              
-              <div className="result-item">
+              {/* Primary - Encoded Hash */}
+              <div className="result-item result-item-primary">
                 <div className="result-header">
-                  <label>Salt ({saltEncoding.toUpperCase()})</label>
+                  <label className="result-label-primary">Encoded Hash</label>
                   <button
-                    className="copy-btn"
-                    onClick={() => copySalt(result.salt)}
-                    disabled={copiedSalt}
-                  >
-                    {copiedSalt ? 'Copied!' : 'Copy'}
-                  </button>
-                </div>
-                <div className="result-content">
-                  <code>{result.salt}</code>
-                </div>
-              </div>
-
-              {selectedAlgorithm !== 'bcrypt' && (
-                <div className="result-item">
-                  <div className="result-header">
-                    <label>Raw Hash ({hashEncoding.toUpperCase()})</label>
-                    <button
-                      className="copy-btn"
-                      onClick={() => copyHash(result.hash)}
-                      disabled={copiedHash}
-                    >
-                      {copiedHash ? 'Copied!' : 'Copy'}
-                    </button>
-                  </div>
-                  <div className="result-content">
-                    <code>{result.hash}</code>
-                  </div>
-                </div>
-              )}
-
-              <div className="result-item">
-                <div className="result-header">
-                  <label>Encoded Hash</label>
-                  <button
-                    className="copy-btn"
+                    className="copy-btn copy-btn-primary"
                     onClick={() => copyEncodedHash(result.encodedHash)}
                     disabled={copiedEncodedHash}
                   >
                     {copiedEncodedHash ? 'Copied!' : 'Copy'}
                   </button>
                 </div>
-                <div className="result-content">
-                  <code>{result.encodedHash}</code>
+                <div className="result-content result-content-primary">
+                  <code className="result-code-primary">{result.encodedHash}</code>
                 </div>
               </div>
 
-              <div className="result-item">
-                <label>Execution Time</label>
-                <div className="result-content">
-                  <code>{result.executionTime}ms</code>
+              {/* Secondary - Algorithm */}
+              <div className="result-item result-item-secondary">
+                <label className="result-label-secondary">Algorithm</label>
+                <div className="result-content result-content-secondary">
+                  <code className="result-code-secondary">{algorithmConfig?.label || selectedAlgorithm}</code>
+                </div>
+              </div>
+
+              {/* Execution Time */}
+              <div className="result-item result-item-tertiary">
+                <label className="result-label-tertiary">Execution Time</label>
+                <div className="result-content result-content-tertiary">
+                  <code className="result-code-tertiary">{result.executionTime}ms</code>
                   {selectedAlgorithm === 'argon2id' && (
                     <div className="execution-time-hint">
                       💡 Try adjusting the parameters to make the time around 500ms
@@ -509,6 +479,57 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
                   )}
                 </div>
               </div>
+
+              {/* Additional Info Toggle */}
+              <div className="additional-info-toggle">
+                <button
+                  className={`toggle-btn ${showAdditionalInfo ? 'expanded' : ''}`}
+                  onClick={() => setShowAdditionalInfo(!showAdditionalInfo)}
+                  type="button"
+                >
+                  <span className="arrow">{showAdditionalInfo ? '▼' : '▶'}</span>
+                  Additional Info
+                </button>
+              </div>
+
+              {/* Additional Info - Hidden by Default */}
+              {showAdditionalInfo && (
+                <div className="additional-info-section">
+                  <div className="result-item result-item-tertiary">
+                    <div className="result-header">
+                      <label className="result-label-tertiary">Salt ({saltEncoding.toUpperCase()})</label>
+                      <button
+                        className="copy-btn copy-btn-tertiary"
+                        onClick={() => copySalt(result.salt)}
+                        disabled={copiedSalt}
+                      >
+                        {copiedSalt ? 'Copied!' : 'Copy'}
+                      </button>
+                    </div>
+                    <div className="result-content result-content-tertiary">
+                      <code className="result-code-tertiary">{result.salt}</code>
+                    </div>
+                  </div>
+
+                  {selectedAlgorithm !== 'bcrypt' && (
+                    <div className="result-item result-item-tertiary">
+                      <div className="result-header">
+                        <label className="result-label-tertiary">Raw Hash ({hashEncoding.toUpperCase()})</label>
+                        <button
+                          className="copy-btn copy-btn-tertiary"
+                          onClick={() => copyHash(result.hash)}
+                          disabled={copiedHash}
+                        >
+                          {copiedHash ? 'Copied!' : 'Copy'}
+                        </button>
+                      </div>
+                      <div className="result-content result-content-tertiary">
+                        <code className="result-code-tertiary">{result.hash}</code>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <div className="results-placeholder">

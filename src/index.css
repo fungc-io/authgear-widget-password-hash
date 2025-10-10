@@ -1662,6 +1662,192 @@ body {
   line-height: 1.4;
 }
 
+/* Password Hash Results Hierarchy - Minimal Card-Based with Color Coding */
+.result-item-primary {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #ffffff;
+  border: 2px solid #0B63E9;
+  border-radius: 8px;
+}
+
+.result-item-secondary {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #10b981;
+  border-radius: 6px;
+}
+
+.result-item-tertiary {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+}
+
+.result-label-primary {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0B63E9;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.result-label-secondary {
+  font-size: 14px;
+  font-weight: 600;
+  color: #10b981;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.result-label-tertiary {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.result-content-primary {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 16px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.result-content-secondary {
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 4px;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.result-content-tertiary {
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 4px;
+  padding: 10px;
+  font-size: 13px;
+}
+
+.result-code-primary {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1f2937;
+  word-break: break-all;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.result-code-secondary {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.result-code-tertiary {
+  font-size: 13px;
+  font-weight: 400;
+  color: #6b7280;
+  word-break: break-all;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.copy-btn-primary {
+  background: #0B63E9;
+  color: white;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.copy-btn-primary:hover {
+  background: #0056b3;
+}
+
+.copy-btn-secondary {
+  background: #10b981;
+  color: white;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.copy-btn-secondary:hover {
+  background: #059669;
+}
+
+.copy-btn-tertiary {
+  background: #6b7280;
+  color: white;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 3px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.copy-btn-tertiary:hover {
+  background: #4b5563;
+}
+
+/* Additional Info Toggle */
+.additional-info-toggle {
+  margin: 16px 0 8px 0;
+  text-align: left;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  padding: 8px 0;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggle-btn:hover {
+  color: #374151;
+}
+
+.toggle-btn .arrow {
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+.toggle-btn.expanded .arrow {
+  transform: rotate(90deg);
+}
+
+.additional-info-section {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
 .verification-results {
   background: white;
   padding: 24px;
