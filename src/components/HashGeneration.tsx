@@ -335,59 +335,7 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
           <div className="form-group">
             <label className="form-label">Salt Configuration</label>
             <div className="salt-config-card">
-              {/* Salt Length and Generation Controls */}
-              {algorithmConfig && (algorithmConfig.parameters.saltLength || selectedAlgorithm === 'bcrypt') && (
-                <div className="salt-controls">
-                  <div className="salt-control-row">
-                    {selectedAlgorithm !== 'bcrypt' && (
-                      <div className="salt-control-group">
-                        <label className="salt-control-label">Length (bytes)</label>
-                        <input
-                          type="number"
-                          className="salt-length-input"
-                          value={parameters.saltLength || algorithmConfig.parameters.saltLength.default}
-                          onChange={(e) => handleParameterChange('saltLength', parseInt(e.target.value))}
-                          min={algorithmConfig.parameters.saltLength.min}
-                          max={algorithmConfig.parameters.saltLength.max}
-                          step={algorithmConfig.parameters.saltLength.step}
-                          title="Salt length in bytes. 16 bytes (128-bit) is recommended."
-                        />
-                      </div>
-                    )}
-                    
-                    {selectedAlgorithm !== 'argon2id' && selectedAlgorithm !== 'bcrypt' && (
-                      <div className="salt-control-group">
-                        <label className="salt-control-label">Format</label>
-                        <div className="salt-format-radio-group">
-                          {SALT_ENCODING_OPTIONS.map(option => (
-                            <label key={option.value} className="salt-format-radio-option">
-                              <input
-                                type="radio"
-                                name="saltEncoding"
-                                value={option.value}
-                                checked={saltEncoding === option.value}
-                                onChange={handleSaltEncodingChange}
-                                className="salt-format-radio-input"
-                              />
-                              <span className="salt-format-radio-label">{option.label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                      <button
-                        className="salt-generate-btn"
-                        onClick={handleGenerateSalt}
-                        type="button"
-                      >
-                        Generate New Salt
-                      </button>
-                    </div>
-                  </div>
-                )}
-              
-              {/* Salt Value Input */}
+              {/* Salt Value Input - Primary Display */}
               <div className="salt-value-section">
                 <label className="salt-value-label">Salt Value</label>
                 <div className="salt-value-container">
@@ -410,6 +358,56 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
                   </div>
                 )}
               </div>
+
+              {/* Salt Generation Controls - Compact Inline Row */}
+              {algorithmConfig && (algorithmConfig.parameters.saltLength || selectedAlgorithm === 'bcrypt') && (
+                <div className="salt-controls-inline">
+                  {selectedAlgorithm !== 'bcrypt' && (
+                    <div className="salt-control-item">
+                      <label className="salt-control-label-inline">Length (bytes)</label>
+                      <input
+                        type="number"
+                        className="salt-length-input-inline"
+                        value={parameters.saltLength || algorithmConfig.parameters.saltLength.default}
+                        onChange={(e) => handleParameterChange('saltLength', parseInt(e.target.value))}
+                        min={algorithmConfig.parameters.saltLength.min}
+                        max={algorithmConfig.parameters.saltLength.max}
+                        step={algorithmConfig.parameters.saltLength.step}
+                        title="Salt length in bytes. 16 bytes (128-bit) is recommended."
+                      />
+                    </div>
+                  )}
+                  
+                  {selectedAlgorithm !== 'argon2id' && selectedAlgorithm !== 'bcrypt' && (
+                    <div className="salt-control-item">
+                      <label className="salt-control-label-inline">Format</label>
+                      <div className="salt-format-radio-group-inline">
+                        {SALT_ENCODING_OPTIONS.map(option => (
+                          <label key={option.value} className="salt-format-radio-option-inline">
+                            <input
+                              type="radio"
+                              name="saltEncoding"
+                              value={option.value}
+                              checked={saltEncoding === option.value}
+                              onChange={handleSaltEncodingChange}
+                              className="salt-format-radio-input"
+                            />
+                            <span className="salt-format-radio-label">{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <button
+                    className="salt-generate-btn-inline"
+                    onClick={handleGenerateSalt}
+                    type="button"
+                  >
+                    Generate New Salt
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

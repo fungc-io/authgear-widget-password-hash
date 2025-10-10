@@ -1169,6 +1169,13 @@ body {
   background: white;
 }
 
+.salt-length-input-small {
+  width: 70px;
+  height: 36px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
 .salt-length-input:focus {
   outline: none;
   border-color: #0B63E9;
@@ -1206,12 +1213,90 @@ body {
   align-self: flex-end;
 }
 
+.salt-generate-btn-small {
+  height: 36px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+/* Inline Salt Controls Layout */
+.salt-controls-inline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+}
+
+.salt-control-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.salt-control-label-inline {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6c757d;
+  white-space: nowrap;
+}
+
+.salt-length-input-inline {
+  width: 60px;
+  height: 32px;
+  padding: 6px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background: white;
+}
+
+.salt-length-input-inline:focus {
+  outline: none;
+  border-color: #0B63E9;
+  box-shadow: 0 0 0 2px rgba(11, 99, 233, 0.1);
+}
+
+.salt-format-radio-group-inline {
+  display: flex;
+  gap: 8px;
+}
+
+.salt-format-radio-option-inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.salt-generate-btn-inline {
+  height: 32px;
+  padding: 6px 12px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.salt-generate-btn-inline:hover {
+  background: #5a6268;
+}
+
 .salt-generate-btn:hover {
   background: #5a6268;
 }
 
 .salt-value-section {
-  margin-top: 16px;
+  margin-top: 4px;
 }
 
 .salt-value-label {
