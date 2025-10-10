@@ -21,6 +21,37 @@ export function generateSalt(length = 16, encoding = 'hex') {
 }
 
 /**
+ * Generate salt for specific algorithm
+ * @param {string} algorithm - Algorithm name ('argon2id', 'scrypt', 'bcrypt', 'pbkdf2')
+ * @param {Object} parameters - Algorithm parameters
+ * @param {string} saltEncoding - Salt encoding for non-algorithm-specific salts
+ * @returns {Promise<string>} Generated salt
+ */
+export async function generateAlgorithmSalt(algorithm, parameters = {}, saltEncoding = 'hex') {
+  switch (algorithm) {
+    case 'bcrypt': {
+      const cost = parameters.cost || 10;
+      const bcrypt = await import('bcryptjs');
+      return await bcrypt.genSalt(cost);
+    }
+    
+    case 'pbkdf2': {
+      const saltLength = parameters.saltLength || 16;
+      const CryptoJS = await import('crypto-js');
+      const saltWordArray = CryptoJS.lib.WordArray.random(saltLength);
+      return saltWordArray.toString(CryptoJS.enc.Hex);
+    }
+    
+    case 'argon2id':
+    case 'scrypt':
+    default: {
+      const saltLength = parameters.saltLength || 16;
+      return generateSalt(saltLength, saltEncoding);
+    }
+  }
+}
+
+/**
  * Convert salt from string to Uint8Array
  * @param {string} salt - Salt string
  * @param {string} encoding - Input encoding ('hex' or 'base64')
@@ -244,6 +275,8 @@ export async function hashBcrypt(password, options = {}) {
  * @returns {Promise<Object>} Hash result with salt, hash, and execution time
  */
 export async function hashPBKDF2(password, options = {}) {
+  console.log('🔵 [PBKDF2] Starting with password:', password, 'options:', options);
+  
   const {
     iterations = 600000,
     saltLength = 16,
@@ -255,48 +288,70 @@ export async function hashPBKDF2(password, options = {}) {
   const startTime = performance.now();
   
   try {
-    // Use provided salt or generate one if not provided
-    const salt = options.salt || generateSalt(saltLength, saltEncoding);
-    const saltBytes = saltToUint8Array(salt, saltEncoding);
+    // Use provided salt or generate one using CryptoJS.lib.WordArray.random
+    let salt;
+    let saltWordArray;
     
-    // Make PBKDF2 computation asynchronous using requestIdleCallback or setTimeout
-    const hash = await new Promise((resolve) => {
-      // Use requestIdleCallback if available, otherwise setTimeout
-      const runComputation = () => {
-        const result = CryptoJS.PBKDF2(password, CryptoJS.lib.WordArray.create(saltBytes), {
-          keySize: keyLength / 4, // CryptoJS uses words (4 bytes each)
-          iterations: iterations
-        });
-        resolve(result);
-      };
-      
-      if (typeof requestIdleCallback !== 'undefined') {
-        requestIdleCallback(runComputation);
+    if (options.salt) {
+      console.log('🔵 [PBKDF2] Using provided salt:', options.salt);
+      // Convert provided salt to WordArray
+      if (saltEncoding === 'hex') {
+        saltWordArray = CryptoJS.enc.Hex.parse(options.salt);
+      } else if (saltEncoding === 'base64') {
+        saltWordArray = CryptoJS.enc.Base64.parse(options.salt);
       } else {
-        setTimeout(runComputation, 0);
+        saltWordArray = CryptoJS.enc.Utf8.parse(options.salt);
       }
+      salt = options.salt;
+    } else {
+      console.log('🔵 [PBKDF2] Generating salt with CryptoJS.lib.WordArray.random');
+      // Generate salt using CryptoJS.lib.WordArray.random (saltLength in bytes)
+      saltWordArray = CryptoJS.lib.WordArray.random(saltLength);
+      salt = saltWordArray.toString(CryptoJS.enc.Hex);
+      console.log('🔵 [PBKDF2] Generated salt:', salt);
+    }
+    
+    // Add a small delay to allow React to render the loading state
+    await new Promise(resolve => setTimeout(resolve, 10));
+    
+    // Use CryptoJS PBKDF2 according to documentation
+    console.log('🔵 [PBKDF2] Computing PBKDF2 with CryptoJS...');
+    console.log('🔵 [PBKDF2] Input parameters:', {
+      password: password,
+      saltWordArray: saltWordArray.toString(CryptoJS.enc.Hex),
+      keySize: keyLength / 4,
+      iterations: iterations
+    });
+    const hash = CryptoJS.PBKDF2(password, saltWordArray, {
+      keySize: keyLength / 4, // CryptoJS uses words (4 bytes each)
+      iterations: iterations
     });
     
     const endTime = performance.now();
     const executionTime = Math.round(endTime - startTime);
     
-    // Convert hash to desired encoding
-    let hashString;
-    if (hashEncoding === 'hex') {
-      hashString = hash.toString(CryptoJS.enc.Hex);
-    } else if (hashEncoding === 'base64') {
-      hashString = hash.toString(CryptoJS.enc.Base64);
-    }
+    // Use CryptoJS result directly (always hex for PBKDF2)
+    const hashString = hash.toString(CryptoJS.enc.Hex);
     
-    return {
+    // Create encoded hash format
+    const saltBase64 = saltWordArray.toString(CryptoJS.enc.Base64);
+    const hashBase64 = hash.toString(CryptoJS.enc.Base64);
+    const encodedHash = `$pbkdf2-sha256$${iterations}$${saltBase64}$${hashBase64}`;
+    
+    const result = {
       algorithm: 'pbkdf2',
       salt,
       hash: hashString,
-      encodedHash: `$pbkdf2-sha256$${iterations}$${btoa(String.fromCharCode(...saltBytes))}$${btoa(String.fromCharCode(...hash.words.map(w => w >>> 24, w => (w >>> 16) & 0xff, w => (w >>> 8) & 0xff, w => w & 0xff).flat()))}`,
+      encodedHash,
       executionTime,
       parameters: { iterations, saltLength, keyLength }
     };
+    
+    console.log('✅ [PBKDF2] Completed in', executionTime, 'ms. Hash:', hashString);
+    
+    return result;
   } catch (error) {
+    console.error('❌ [PBKDF2] Error:', error.message);
     throw new Error(`PBKDF2 hashing failed: ${error.message}`);
   }
 }
@@ -370,21 +425,26 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
         return bcryptResult;
       
       case 'pbkdf2':
+        console.log('🔵 [PBKDF2 Verify] Verifying password against hash');
         // For PBKDF2, we need to parse the encoded hash
         const pbkdf2Match = hash.match(/^\$pbkdf2-sha256\$(\d+)\$([^$]+)\$([^$]+)$/);
         if (!pbkdf2Match) {
+          console.error('❌ [PBKDF2 Verify] Invalid hash format');
           throw new Error('Invalid PBKDF2 hash format');
         }
         const [, pbkdf2Iterations, pbkdf2SaltB64, pbkdf2HashB64] = pbkdf2Match;
         const pbkdf2SaltBytes = new Uint8Array(atob(pbkdf2SaltB64).split('').map(c => c.charCodeAt(0)));
         const expectedPbkdf2Hash = atob(pbkdf2HashB64);
         
+        console.log('🔵 [PBKDF2 Verify] Computing PBKDF2 with CryptoJS...');
         const computedPbkdf2Hash = CryptoJS.PBKDF2(password, CryptoJS.lib.WordArray.create(pbkdf2SaltBytes), {
           keySize: expectedPbkdf2Hash.length / 4,
           iterations: parseInt(pbkdf2Iterations)
         });
         
-        return computedPbkdf2Hash.toString(CryptoJS.enc.Base64) === pbkdf2HashB64;
+        const result = computedPbkdf2Hash.toString(CryptoJS.enc.Base64) === pbkdf2HashB64;
+        console.log('✅ [PBKDF2 Verify] Verification result:', result);
+        return result;
       
       default:
         throw new Error(`Unsupported algorithm: ${algorithm}`);

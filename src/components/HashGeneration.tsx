@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { HASHING_ALGORITHMS, PARAMETER_WARNINGS, SALT_ENCODING_OPTIONS, HASH_ENCODING_OPTIONS } from '../constants';
-import { hashArgon2id, hashScrypt, hashBcrypt, hashPBKDF2, generateSalt } from '../services/hashingService';
+import { hashArgon2id, hashScrypt, hashBcrypt, hashPBKDF2, generateSalt, generateAlgorithmSalt } from '../services/hashingService';
 import { useClipboard } from '../utils';
 
 interface HashGenerationProps {
@@ -46,28 +46,24 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
   // Generate initial salt on component mount
   React.useEffect(() => {
     const generateInitialSalt = async () => {
-      if (selectedAlgorithm === 'bcrypt') {
-        // For bcrypt, use bcrypt.genSalt with cost factor
-        const cost = parameters.cost || (algorithmConfig?.parameters.cost?.default || 10);
-        try {
-          const bcrypt = await import('bcryptjs');
-          const initialSalt = await bcrypt.genSalt(cost);
-          setSaltInput(initialSalt);
-        } catch (error) {
-          console.error('Error generating initial bcrypt salt:', error);
-          // Fallback to default salt
-          setSaltInput('$2a$10$N9qo8uLOickgx2ZMRZoMye');
-        }
-      } else {
-        // For other algorithms, use the existing generateSalt function
-        const saltLength = parameters.saltLength || (algorithmConfig?.parameters.saltLength?.default || 16);
-        const initialSalt = generateSalt(saltLength, saltEncoding);
+      try {
+        const initialSalt = await generateAlgorithmSalt(selectedAlgorithm, parameters, saltEncoding);
         setSaltInput(initialSalt);
+      } catch (error) {
+        console.error('Error generating initial salt:', error);
+        // Fallback to default salt based on algorithm
+        const fallbackSalts = {
+          bcrypt: '$2a$10$N9qo8uLOickgx2ZMRZoMye',
+          pbkdf2: '778e2617f07e1a6288f448d9b6cad1ce',
+          argon2id: '778e2617f07e1a6288f448d9b6cad1ce',
+          scrypt: '778e2617f07e1a6288f448d9b6cad1ce'
+        };
+        setSaltInput(fallbackSalts[selectedAlgorithm] || '778e2617f07e1a6288f448d9b6cad1ce');
       }
     };
     
     generateInitialSalt();
-  }, [selectedAlgorithm]); // Run when algorithm changes
+  }, [selectedAlgorithm, parameters, saltEncoding]); // Run when algorithm changes
 
   // Check for parameter warnings
   const warnings = useMemo(() => {
@@ -128,27 +124,8 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
   }, [validateField, hasAttemptedSubmit]);
 
   const handleGenerateSalt = useCallback(async () => {
-    if (selectedAlgorithm === 'bcrypt') {
-      // For bcrypt, use bcrypt.genSalt with cost factor
-      const cost = parameters.cost || (algorithmConfig?.parameters.cost?.default || 10);
-      try {
-        const bcrypt = await import('bcryptjs');
-        const newSalt = await bcrypt.genSalt(cost);
-        setSaltInput(newSalt);
-        setResult(null); // Clear results when salt is regenerated
-        if (hasAttemptedSubmit) {
-          setValidationErrors(prev => ({
-            ...prev,
-            salt: validateField('salt', newSalt)
-          }));
-        }
-      } catch (error) {
-        console.error('Error generating bcrypt salt:', error);
-      }
-    } else {
-      // For other algorithms, use the existing generateSalt function
-      const saltLength = parameters.saltLength || (algorithmConfig?.parameters.saltLength?.default || 16);
-      const newSalt = generateSalt(saltLength, saltEncoding);
+    try {
+      const newSalt = await generateAlgorithmSalt(selectedAlgorithm, parameters, saltEncoding);
       setSaltInput(newSalt);
       setResult(null); // Clear results when salt is regenerated
       if (hasAttemptedSubmit) {
@@ -157,8 +134,10 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
           salt: validateField('salt', newSalt)
         }));
       }
+    } catch (error) {
+      console.error('Error generating salt:', error);
     }
-  }, [selectedAlgorithm, saltEncoding, validateField, hasAttemptedSubmit, parameters.saltLength, parameters.cost, algorithmConfig]);
+  }, [selectedAlgorithm, parameters, saltEncoding, validateField, hasAttemptedSubmit]);
 
   const handleAlgorithmChange = useCallback((e) => {
     setSelectedAlgorithm(e.target.value);
@@ -413,8 +392,8 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
             </div>
           </div>
 
-          {/* Output Encoding - Hide for bcrypt */}
-          {selectedAlgorithm !== 'bcrypt' && (
+          {/* Output Encoding - Hide for bcrypt and PBKDF2 */}
+          {selectedAlgorithm !== 'bcrypt' && selectedAlgorithm !== 'pbkdf2' && (
             <div className="form-group">
               <label className="form-label">Output Encoding</label>
               <div className="encoding-radio-group">
