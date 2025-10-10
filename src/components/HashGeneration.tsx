@@ -45,7 +45,8 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
 
   // Generate initial salt on component mount
   React.useEffect(() => {
-    const initialSalt = generateSalt(16, saltEncoding);
+    const saltLength = parameters.saltLength || (algorithmConfig?.parameters.saltLength?.default || 16);
+    const initialSalt = generateSalt(saltLength, saltEncoding);
     setSaltInput(initialSalt);
   }, []); // Only run on mount
 
@@ -108,7 +109,8 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
   }, [validateField, hasAttemptedSubmit]);
 
   const handleGenerateSalt = useCallback(() => {
-    const newSalt = generateSalt(16, saltEncoding);
+    const saltLength = parameters.saltLength || (algorithmConfig?.parameters.saltLength?.default || 16);
+    const newSalt = generateSalt(saltLength, saltEncoding);
     setSaltInput(newSalt);
     setResult(null); // Clear results when salt is regenerated
     if (hasAttemptedSubmit) {
@@ -117,7 +119,7 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
         salt: validateField('salt', newSalt)
       }));
     }
-  }, [saltEncoding, validateField, hasAttemptedSubmit]);
+  }, [saltEncoding, validateField, hasAttemptedSubmit, parameters.saltLength, algorithmConfig]);
 
   const handleAlgorithmChange = useCallback((e) => {
     setSelectedAlgorithm(e.target.value);
@@ -210,128 +212,182 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
             )}
           </div>
 
+          {/* Algorithm Configuration */}
           <div className="form-group">
-            <label className="form-label">Algorithm</label>
-            <select
-              className="form-select"
-              value={selectedAlgorithm}
-              onChange={handleAlgorithmChange}
-            >
-              {Object.values(HASHING_ALGORITHMS).map(alg => (
-                <option key={alg.value} value={alg.value}>
-                  {alg.label} - {alg.description}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Algorithm Parameters */}
-          {algorithmConfig && (
-            <div className="form-group">
-              <label className="form-label">Parameters</label>
-              <div className="parameters-grid">
-                {Object.keys(algorithmConfig.parameters).map(paramKey => {
-                  const param = algorithmConfig.parameters[paramKey];
-                  const getParameterDescription = (key) => {
-                    const descriptions = {
-                      memory: 'Memory usage in MiB. Higher = more secure but slower.',
-                      iterations: 'Number of iterations. Higher = more secure but slower.',
-                      parallelism: 'Number of parallel threads. Usually 4 for optimal performance.',
-                      saltLength: 'Salt length in bytes. 16 bytes (128-bit) is recommended.',
-                      keyLength: 'Hash output length in bytes. 32 bytes (256-bit) is recommended.',
-                      N: 'CPU/Memory cost factor. Must be power of 2.',
-                      r: 'Block size parameter. Higher = more memory usage.',
-                      p: 'Parallelization parameter. Usually 1.',
-                      cost: 'Cost factor (2^cost rounds). Higher = more secure but slower.'
-                    };
-                    return descriptions[key] || '';
-                  };
-                  
-                  return (
-                    <div key={paramKey} className="parameter-input">
-                      <label className="parameter-label">{param.label}</label>
-                      <input
-                        type="number"
-                        className="form-input parameter-input-field"
-                        value={parameters[paramKey] || param.default}
-                        onChange={(e) => handleParameterChange(paramKey, parseInt(e.target.value))}
-                        min={param.min}
-                        max={param.max}
-                        step={param.step}
-                        title={getParameterDescription(paramKey)}
-                      />
-                      <small className="parameter-description">
-                        {getParameterDescription(paramKey)}
-                      </small>
-                    </div>
-                  );
-                })}
-              </div>
-              {warnings.length > 0 && (
-                <div className="warnings">
-                  {warnings.map((warning, index) => (
-                    <div key={index} className="warning-message">
-                      ⚠️ {warning}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Salt Configuration */}
-          <div className="form-group">
-            <label className="form-label">Salt</label>
-            <div className="salt-input-section">
-              <div className="salt-input-row">
-                <input
-                  type="text"
-                  className={`form-input ${validationErrors.salt ? 'error' : ''}`}
-                  value={saltInput}
-                  onChange={handleSaltChange}
-                  placeholder="Enter salt or generate one..."
-                />
-                <button
-                  className="btn generate-salt-btn"
-                  onClick={handleGenerateSalt}
-                  type="button"
-                >
-                  Generate
-                </button>
+            <label className="form-label">Algorithm Configuration</label>
+            <div className="algorithm-config-card">
+              {/* Algorithm Selection */}
+              <div className="algorithm-selection">
+                <label className="algorithm-label">Algorithm</label>
                 <select
-                  className="form-select salt-encoding"
-                  value={saltEncoding}
-                  onChange={handleSaltEncodingChange}
+                  className="algorithm-select"
+                  value={selectedAlgorithm}
+                  onChange={handleAlgorithmChange}
                 >
-                  {SALT_ENCODING_OPTIONS.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
+                  {Object.values(HASHING_ALGORITHMS).map(alg => (
+                    <option key={alg.value} value={alg.value}>
+                      {alg.label} - {alg.description}
                     </option>
                   ))}
                 </select>
               </div>
-              {validationErrors.salt && (
-                <div className="validation-error" style={{color: 'red', fontSize: '14px', marginTop: '4px'}}>
-                  ⚠️ {validationErrors.salt}
+
+              {/* Algorithm Parameters */}
+              {algorithmConfig && (
+                <div className="algorithm-parameters">
+                  <label className="parameters-label">Parameters</label>
+                  <div className="parameters-grid">
+                    {Object.keys(algorithmConfig.parameters).map(paramKey => {
+                      // Skip saltLength as it will be moved to Salt Configuration section
+                      if (paramKey === 'saltLength') return null;
+                      
+                      const param = algorithmConfig.parameters[paramKey];
+                      const getParameterDescription = (key) => {
+                        const descriptions = {
+                          memory: 'Memory usage in MiB. Higher = more secure but slower.',
+                          iterations: 'Number of iterations. Higher = more secure but slower.',
+                          parallelism: 'Number of parallel threads. Usually 4 for optimal performance.',
+                          saltLength: 'Salt length in bytes. 16 bytes (128-bit) is recommended.',
+                          keyLength: 'Hash output length in bytes. 32 bytes (256-bit) is recommended.',
+                          N: 'CPU/Memory cost factor. Must be power of 2.',
+                          r: 'Block size parameter. Higher = more memory usage.',
+                          p: 'Parallelization parameter. Usually 1.',
+                          cost: 'Cost factor (2^cost rounds). Higher = more secure but slower.'
+                        };
+                        return descriptions[key] || '';
+                      };
+                      
+                      return (
+                        <div key={paramKey} className="parameter-group">
+                          <label className="parameter-label tooltip-label">
+                            {param.label}
+                            <div className="tooltip">
+                              {getParameterDescription(paramKey)}
+                            </div>
+                          </label>
+                          <input
+                            type="number"
+                            className="parameter-input"
+                            value={parameters[paramKey] || param.default}
+                            onChange={(e) => handleParameterChange(paramKey, parseInt(e.target.value))}
+                            min={param.min}
+                            max={param.max}
+                            step={param.step}
+                          />
+                        </div>
+                      );
+                    }).filter(Boolean)}
+                  </div>
+                  {warnings.length > 0 && (
+                    <div className="parameter-warnings">
+                      {warnings.map((warning, index) => (
+                        <div key={index} className="warning-message">
+                          ⚠️ {warning}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Salt Configuration */}
+          <div className="form-group">
+            <label className="form-label">Salt Configuration</label>
+            <div className="salt-config-card">
+              {/* Salt Length and Generation Controls */}
+              {algorithmConfig && algorithmConfig.parameters.saltLength && (
+                <div className="salt-controls">
+                  <div className="salt-control-row">
+                    <div className="salt-control-group">
+                      <label className="salt-control-label">Length (bytes)</label>
+                      <input
+                        type="number"
+                        className="salt-length-input"
+                        value={parameters.saltLength || algorithmConfig.parameters.saltLength.default}
+                        onChange={(e) => handleParameterChange('saltLength', parseInt(e.target.value))}
+                        min={algorithmConfig.parameters.saltLength.min}
+                        max={algorithmConfig.parameters.saltLength.max}
+                        step={algorithmConfig.parameters.saltLength.step}
+                        title="Salt length in bytes. 16 bytes (128-bit) is recommended."
+                      />
+                    </div>
+                    
+                    <div className="salt-control-group">
+                      <label className="salt-control-label">Format</label>
+                      <div className="salt-format-radio-group">
+                        {SALT_ENCODING_OPTIONS.map(option => (
+                          <label key={option.value} className="salt-format-radio-option">
+                            <input
+                              type="radio"
+                              name="saltEncoding"
+                              value={option.value}
+                              checked={saltEncoding === option.value}
+                              onChange={handleSaltEncodingChange}
+                              className="salt-format-radio-input"
+                            />
+                            <span className="salt-format-radio-label">{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <button
+                      className="salt-generate-btn"
+                      onClick={handleGenerateSalt}
+                      type="button"
+                    >
+                      Generate New Salt
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Salt Value Input */}
+              <div className="salt-value-section">
+                <label className="salt-value-label">Salt Value</label>
+                <div className="salt-value-container">
+                  <input
+                    type="text"
+                    className={`salt-value-input ${validationErrors.salt ? 'error' : ''}`}
+                    value={saltInput}
+                    onChange={handleSaltChange}
+                    placeholder="Enter salt value or generate one..."
+                  />
+                  <div className="salt-value-info">
+                    <span className="salt-length-display">
+                      {saltInput ? `${Math.ceil(saltInput.length / 2)} bytes` : '0 bytes'}
+                    </span>
+                  </div>
+                </div>
+                {validationErrors.salt && (
+                  <div className="salt-validation-error">
+                    ⚠️ {validationErrors.salt}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Output Encoding */}
           <div className="form-group">
             <label className="form-label">Output Encoding</label>
-            <select
-              className="form-select"
-              value={hashEncoding}
-              onChange={handleHashEncodingChange}
-            >
+            <div className="encoding-radio-group">
               {HASH_ENCODING_OPTIONS.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
+                <label key={option.value} className="encoding-radio-option">
+                  <input
+                    type="radio"
+                    name="hashEncoding"
+                    value={option.value}
+                    checked={hashEncoding === option.value}
+                    onChange={handleHashEncodingChange}
+                    className="encoding-radio-input"
+                  />
+                  <span className="encoding-radio-label">{option.label}</span>
+                </label>
               ))}
-            </select>
+            </div>
           </div>
 
           <button
@@ -339,7 +395,7 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
             onClick={handleGenerate}
             disabled={isGenerating}
           >
-            {isGenerating ? 'Generating...' : 'Generate Hash'}
+            {isGenerating ? 'Generating...' : 'Generate Password Hash'}
           </button>
 
           {error && (
@@ -353,13 +409,13 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
         <div className="results-section">
           {isGenerating ? (
             <div className="results-loading">
-              <h3>Generating Hash...</h3>
+              <h3>Generating Password Hash...</h3>
               <div className="loading-spinner"></div>
-              <p>Please wait while we generate your hash.</p>
+              <p>Please wait while we generate your password hash.</p>
             </div>
           ) : result ? (
             <>
-              <h3>Hash Results</h3>
+              <h3>Password Hash Results</h3>
               
               <div className="result-item">
                 <label>Algorithm</label>
@@ -425,8 +481,8 @@ const HashGeneration: React.FC<HashGenerationProps> = ({ selectedAlgorithm, setS
             </>
           ) : (
             <div className="results-placeholder">
-              <h3>Hash Results</h3>
-              <p>Enter a password and click "Generate Hash" to see the results here.</p>
+              <h3>Password Hash Results</h3>
+              <p>Enter a password and click "Generate Password Hash" to see the results here.</p>
             </div>
           )}
         </div>

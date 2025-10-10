@@ -42,13 +42,13 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           className={`tab ${activeTab === 'generate' ? 'active' : ''}`}
           onClick={() => setActiveTab('generate')}
         >
-          Hash Generation
+          Generate Password Hash
         </button>
         <button 
           className={`tab ${activeTab === 'verify' ? 'active' : ''}`}
           onClick={() => setActiveTab('verify')}
         >
-          Hash Verification
+          Verify Password Hash
         </button>
       </div>
       {!isInIframe && (
