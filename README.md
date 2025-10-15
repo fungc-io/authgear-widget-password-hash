@@ -4,7 +4,7 @@ A React-based password hashing tool for generating and verifying password hashes
 
 ## 🌐 Live Demo
 
-**[Try it online](https://www.authgear.com/auth-tools)**
+**[Try it online](https://www.authgear.com/tools/password-hash-generator)**
 
 ## Features
 
