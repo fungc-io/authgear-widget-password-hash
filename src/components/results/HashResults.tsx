@@ -107,7 +107,7 @@ const HashResults: React.FC<HashResultsProps> = ({
             </div>
           </div>
 
-          {selectedAlgorithm !== 'bcrypt' && selectedAlgorithm !== 'scrypt' && (
+          {selectedAlgorithm !== 'bcrypt' && selectedAlgorithm !== 'scrypt' && selectedAlgorithm !== 'pbkdf2' && (
             <div className="result-item result-item-tertiary">
               <div className="result-header">
                 <label className="result-label-tertiary">Raw Hash ({hashEncoding.toUpperCase()})</label>
