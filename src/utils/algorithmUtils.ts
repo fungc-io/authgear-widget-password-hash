@@ -68,7 +68,7 @@ export const supportsSaltFormat = (algorithm: string): boolean => {
  * Check if algorithm supports output encoding selection
  */
 export const supportsOutputEncoding = (algorithm: string): boolean => {
-  return !['bcrypt', 'pbkdf2'].includes(algorithm);
+  return !['bcrypt', 'pbkdf2', 'argon2id'].includes(algorithm);
 };
 
 /**

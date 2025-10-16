@@ -106,8 +106,7 @@ export async function hashArgon2id(password, options = {}) {
     parallelism = 1,
     saltLength = 16,
     keyLength = 32,
-    saltEncoding = 'hex',
-    hashEncoding = 'hex'
+    saltEncoding = 'hex'
   } = options;
 
   const startTime = performance.now();
@@ -140,30 +139,18 @@ export async function hashArgon2id(password, options = {}) {
     const endTime = performance.now();
     const executionTime = Math.round(endTime - startTime);
     
-    // Convert hash to desired encoding
-    let hashString;
-    if (hashEncoding === 'hex') {
-      hashString = result.hashHex;
-    } else if (hashEncoding === 'base64') {
-      // Convert hex to base64
-      const hex = result.hashHex;
-      const bytes = new Uint8Array(hex.length / 2);
-      for (let i = 0; i < hex.length; i += 2) {
-        bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
-      }
-      hashString = btoa(String.fromCharCode(...bytes));
-    }
-    
+    // Argon2id always uses the PHC string format (result.encoded)
+    // This format includes all parameters and uses base64 encoding
     const finalResult = {
       algorithm: 'argon2id',
       salt,
-      hash: hashString,
+      hash: result.encoded, // Use the standard PHC format
       encodedHash: result.encoded,
       executionTime,
       parameters: { memory, iterations, parallelism, saltLength, keyLength }
     };
     
-    debugLog('✅ [Argon2id] Completed in', executionTime, 'ms. Hash:', hashString);
+    debugLog('✅ [Argon2id] Completed in', executionTime, 'ms. Hash:', result.encoded);
     
     return finalResult;
   } catch (error) {

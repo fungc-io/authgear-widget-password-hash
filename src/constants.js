@@ -5,9 +5,9 @@ export const HASHING_ALGORITHMS = {
     label: 'Argon2id',
     description: 'Memory-hard password hashing function',
     parameters: {
-      memory: { label: 'Memory (MiB)', default: 19, min: 1, max: 2048, step: 1 },
-      iterations: { label: 'Iterations', default: 2, min: 1, max: 10, step: 1 },
-      parallelism: { label: 'Parallelism', default: 1, min: 1, max: 16, step: 1 },
+      memory: { label: 'Memory (MiB) (m)', default: 19, min: 1, max: 2048, step: 1 },
+      iterations: { label: 'Iterations (t)', default: 2, min: 1, max: 10, step: 1 },
+      parallelism: { label: 'Parallelism (p)', default: 1, min: 1, max: 16, step: 1 },
       saltLength: { label: 'Salt Length (bytes)', default: 16, min: 8, max: 64, step: 1 },
       keyLength: { label: 'Hash Length (bytes)', default: 32, min: 16, max: 64, step: 1 }
     }
