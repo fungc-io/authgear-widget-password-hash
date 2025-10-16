@@ -65,6 +65,24 @@ export const saltToUint8Array = (salt: string, encoding = 'hex'): Uint8Array => 
 };
 
 /**
+ * Check if bcrypt salt needs regeneration based on cost factor
+ */
+export const shouldRegenerateBcryptSalt = (currentSalt: string, newCost: number): boolean => {
+  if (!currentSalt || !currentSalt.startsWith('$2')) {
+    return true; // Not a valid bcrypt salt
+  }
+  
+  // Extract cost from current salt (format: $2a$XX$...)
+  const costMatch = currentSalt.match(/^\$2[aby]\$(\d+)\$/);
+  if (!costMatch) {
+    return true; // Invalid bcrypt salt format
+  }
+  
+  const currentCost = parseInt(costMatch[1], 10);
+  return currentCost !== newCost;
+};
+
+/**
  * Get fallback salt for algorithm
  */
 export const getFallbackSalt = (algorithm: string): string => {
