@@ -86,7 +86,7 @@ export const useHashGeneration = ({
         ...parameters,
         salt: saltInput,
         saltEncoding,
-        ...(selectedAlgorithm !== 'argon2id' && { hashEncoding })
+        ...(!['argon2id', 'scrypt'].includes(selectedAlgorithm) && { hashEncoding })
       };
 
       let hashResult;

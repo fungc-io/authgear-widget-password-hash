@@ -25,7 +25,7 @@ export const HASHING_ALGORITHMS = {
     label: 'scrypt',
     description: 'Memory-hard key derivation function',
     parameters: {
-      N: { label: 'N (CPU/Memory cost)', default: 16384, min: 1024, max: 1048576, step: 1024 }, // 2^14
+      N: { label: 'N (CPU/Memory cost) (ln)', default: 16384, min: 1024, max: 1048576, step: 1024 }, // 2^14
       r: { label: 'r (Block size)', default: 8, min: 1, max: 32, step: 1 },
       p: { label: 'p (Parallelization)', default: 1, min: 1, max: 16, step: 1 },
       saltLength: { label: 'Salt Length (bytes)', default: 16, min: 8, max: 64, step: 1 },

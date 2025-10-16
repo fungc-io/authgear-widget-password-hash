@@ -174,8 +174,7 @@ export async function hashScrypt(password, options = {}) {
     p = 1,
     saltLength = 16,
     keyLength = 32,
-    saltEncoding = 'hex',
-    hashEncoding = 'hex'
+    saltEncoding = 'hex'
   } = options;
 
   const startTime = performance.now();
@@ -211,24 +210,26 @@ export async function hashScrypt(password, options = {}) {
     const endTime = performance.now();
     const executionTime = Math.round(endTime - startTime);
     
-    // Convert hash to desired encoding
-    let hashString;
-    if (hashEncoding === 'hex') {
-      hashString = Array.from(hash, byte => byte.toString(16).padStart(2, '0')).join('');
-    } else if (hashEncoding === 'base64') {
-      hashString = btoa(String.fromCharCode(...hash));
-    }
+    // Convert salt and hash to base64 for PHC format
+    const saltBase64 = btoa(String.fromCharCode(...saltBytes));
+    const hashBase64 = btoa(String.fromCharCode(...hash));
+    
+    // Calculate log2(N) for PHC format
+    const logN = Math.log2(N);
+    
+    // Generate PHC string format: $scrypt$ln=<cost>,r=<blocksize>,p=<parallelism>$<salt>$<hash>
+    const phcString = `$scrypt$ln=${logN},r=${r},p=${p}$${saltBase64}$${hashBase64}`;
     
     const result = {
       algorithm: 'scrypt',
       salt,
-      hash: hashString,
-      encodedHash: `$scrypt$N=${N},r=${r},p=${p}$${btoa(String.fromCharCode(...saltBytes))}$${btoa(String.fromCharCode(...hash))}`,
+      hash: phcString, // Use PHC format as the main hash
+      encodedHash: phcString,
       executionTime,
       parameters: { N, r, p, saltLength, keyLength }
     };
     
-    debugLog('✅ [scrypt] Completed in', executionTime, 'ms. Hash:', hashString);
+    debugLog('✅ [scrypt] Completed in', executionTime, 'ms. Hash:', phcString);
     
     return result;
   } catch (error) {
@@ -425,13 +426,14 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
       
       case 'scrypt':
         debugLog('🔵 [scrypt Verify] Verifying password against hash');
-        // For scrypt, we need to parse the encoded hash to extract parameters
-        const scryptMatch = hash.match(/^\$scrypt\$N=(\d+),r=(\d+),p=(\d+)\$([^$]+)\$([^$]+)$/);
+        // Parse PHC format: $scrypt$ln=<cost>,r=<blocksize>,p=<parallelism>$<salt>$<hash>
+        const scryptMatch = hash.match(/^\$scrypt\$ln=([\d.]+),r=(\d+),p=(\d+)\$([^$]+)\$([^$]+)$/);
         if (!scryptMatch) {
-          debugError('❌ [scrypt Verify] Invalid hash format');
-          throw new Error('Invalid scrypt hash format');
+          debugError('❌ [scrypt Verify] Invalid PHC hash format');
+          throw new Error('Invalid scrypt PHC hash format');
         }
-        const [, N, r, p, scryptSaltB64, scryptHashB64] = scryptMatch;
+        const [, logN, r, p, scryptSaltB64, scryptHashB64] = scryptMatch;
+        const N = Math.pow(2, parseFloat(logN)); // Convert log2(N) back to N
         const saltBytes = new Uint8Array(atob(scryptSaltB64).split('').map(c => c.charCodeAt(0)));
         const expectedHash = new Uint8Array(atob(scryptHashB64).split('').map(c => c.charCodeAt(0)));
         
@@ -443,7 +445,7 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
         await new Promise(resolve => setTimeout(resolve, 10));
         
         debugLog('🔵 [scrypt Verify] Computing scrypt with parameters:', {
-          N: parseInt(N),
+          N: N,
           r: parseInt(r),
           p: parseInt(p),
           keyLength: expectedHash.length
@@ -451,7 +453,7 @@ export async function verifyPassword(password, hash, algorithm, options = {}) {
         const computedHash = await scrypt.scrypt(
           new TextEncoder().encode(normalizedPassword),
           saltBytes,
-          parseInt(N),
+          N,
           parseInt(r),
           parseInt(p),
           expectedHash.length
