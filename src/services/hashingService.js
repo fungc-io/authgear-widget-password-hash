@@ -48,7 +48,9 @@ export async function generateAlgorithmSalt(algorithm, parameters = {}, saltEnco
     case 'bcrypt': {
       const cost = parameters.cost || 10;
       const bcrypt = await import('bcryptjs');
-      return await bcrypt.genSalt(cost);
+      const fullSalt = await bcrypt.genSalt(cost);
+      // Extract only the actual salt part (22 characters after $2a$10$)
+      return fullSalt.substring(7, 29);
     }
     
     case 'pbkdf2': {
@@ -256,7 +258,12 @@ export async function hashBcrypt(password, options = {}) {
     
     if (salt) {
       debugLog('🔵 [bcrypt] Using provided salt:', salt);
-      bcryptSalt = salt;
+      // If salt doesn't start with $2, reconstruct the full bcrypt salt format
+      if (!salt.startsWith('$2')) {
+        bcryptSalt = `$2a$${cost}$${salt}`;
+      } else {
+        bcryptSalt = salt;
+      }
     } else {
       debugLog('🔵 [bcrypt] Generating new salt with cost:', cost);
       // Generate salt using async function
@@ -271,8 +278,8 @@ export async function hashBcrypt(password, options = {}) {
     const endTime = performance.now();
     const executionTime = Math.round(endTime - startTime);
     
-    // Extract salt from bcrypt hash (first 29 characters)
-    const extractedSalt = hash.substring(0, 29);
+    // Extract only the actual salt part (22 characters after $2a$10$)
+    const extractedSalt = hash.substring(7, 29);
     
     const result = {
       algorithm: 'bcrypt',

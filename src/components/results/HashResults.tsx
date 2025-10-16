@@ -107,23 +107,6 @@ const HashResults: React.FC<HashResultsProps> = ({
             </div>
           </div>
 
-          {selectedAlgorithm !== 'bcrypt' && selectedAlgorithm !== 'scrypt' && selectedAlgorithm !== 'pbkdf2' && (
-            <div className="result-item result-item-tertiary">
-              <div className="result-header">
-                <label className="result-label-tertiary">Raw Hash ({hashEncoding.toUpperCase()})</label>
-                <button
-                  className="copy-btn copy-btn-tertiary"
-                  onClick={() => copyHash(result.hash)}
-                  disabled={copiedHash}
-                >
-                  {copiedHash ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
-              <div className="result-content result-content-tertiary">
-                <code className="result-code-tertiary">{result.hash}</code>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </>

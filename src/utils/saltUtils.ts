@@ -5,8 +5,13 @@
 /**
  * Calculate salt byte length based on encoding
  */
-export const calculateSaltByteLength = (salt: string, encoding: string): number => {
+export const calculateSaltByteLength = (salt: string, encoding: string, algorithm?: string): number => {
   if (!salt) return 0;
+  
+  // Bcrypt salts are always 22 characters representing 16 bytes in base64
+  if (algorithm === 'bcrypt') {
+    return salt.length === 22 ? 16 : 0;
+  }
   
   try {
     if (encoding === 'hex') {
@@ -68,18 +73,13 @@ export const saltToUint8Array = (salt: string, encoding = 'hex'): Uint8Array => 
  * Check if bcrypt salt needs regeneration based on cost factor
  */
 export const shouldRegenerateBcryptSalt = (currentSalt: string, newCost: number): boolean => {
-  if (!currentSalt || !currentSalt.startsWith('$2')) {
-    return true; // Not a valid bcrypt salt
+  if (!currentSalt || currentSalt.length !== 22) {
+    return true; // Not a valid bcrypt salt (should be 22 characters)
   }
   
-  // Extract cost from current salt (format: $2a$XX$...)
-  const costMatch = currentSalt.match(/^\$2[aby]\$(\d+)\$/);
-  if (!costMatch) {
-    return true; // Invalid bcrypt salt format
-  }
-  
-  const currentCost = parseInt(costMatch[1], 10);
-  return currentCost !== newCost;
+  // For extracted salt, we can't determine the cost from the salt alone
+  // So we always regenerate when cost changes
+  return true;
 };
 
 /**
@@ -87,7 +87,7 @@ export const shouldRegenerateBcryptSalt = (currentSalt: string, newCost: number)
  */
 export const getFallbackSalt = (algorithm: string): string => {
   const fallbackSalts = {
-    bcrypt: '$2a$10$N9qo8uLOickgx2ZMRZoMye',
+    bcrypt: 'N9qo8uLOickgx2ZMRZoMye', // 22-character salt without $2a$10$ prefix
     pbkdf2: '778e2617f07e1a6288f448d9b6cad1ce',
     argon2id: '778e2617f07e1a6288f448d9b6cad1ce',
     scrypt: '778e2617f07e1a6288f448d9b6cad1ce'

@@ -4,7 +4,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { generateAlgorithmSalt } from '../services/hashingService';
-import { calculateSaltByteLength, getFallbackSalt, shouldRegenerateBcryptSalt } from '../utils/saltUtils';
+import { calculateSaltByteLength, getFallbackSalt } from '../utils/saltUtils';
 import { validateSalt } from '../utils/validation';
 
 interface UseSaltManagementProps {
@@ -18,7 +18,7 @@ export const useSaltManagement = ({ selectedAlgorithm, parameters, saltEncoding 
   const [validationError, setValidationError] = useState('');
 
   // Calculate salt byte length
-  const saltByteLength = calculateSaltByteLength(saltInput, saltEncoding);
+  const saltByteLength = calculateSaltByteLength(saltInput, saltEncoding, selectedAlgorithm);
 
   // Generate initial salt on component mount
   useEffect(() => {
@@ -35,24 +35,6 @@ export const useSaltManagement = ({ selectedAlgorithm, parameters, saltEncoding 
     
     generateInitialSalt();
   }, [selectedAlgorithm, saltEncoding]); // Removed parameters to prevent infinite loop
-
-  // Regenerate bcrypt salt when cost factor changes
-  useEffect(() => {
-    if (selectedAlgorithm === 'bcrypt' && saltInput && parameters.cost) {
-      const needsRegeneration = shouldRegenerateBcryptSalt(saltInput, parameters.cost);
-      if (needsRegeneration) {
-        const regenerateBcryptSalt = async () => {
-          try {
-            const newSalt = await generateAlgorithmSalt(selectedAlgorithm, parameters, saltEncoding);
-            setSaltInput(newSalt);
-          } catch (error) {
-            console.error('Error regenerating bcrypt salt:', error);
-          }
-        };
-        regenerateBcryptSalt();
-      }
-    }
-  }, [selectedAlgorithm, parameters.cost, saltInput, saltEncoding]);
 
   // Handle salt input change
   const handleSaltChange = useCallback((value: string) => {
